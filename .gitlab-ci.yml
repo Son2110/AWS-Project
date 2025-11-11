@@ -27,12 +27,13 @@ build_app:
 # Stage 2: Deploy lên S3 và Invalidate CloudFront
 deploy_to_s3:
   stage: deploy
-  image: amazon/aws-cli:latest # Dùng image chính thức của AWS
+  image: 
+    name: amazon/aws-cli:latest # Dùng image chính thức của AWS
   
   # 💡 SỬA LỖI Ở ĐÂY:
   # Ghi đè entrypoint của image. Image này mặc định có entrypoint là "aws",
   # chúng ta reset nó về "" để GitLab Runner có thể chạy shell (sh -c "...")
-  entrypoint: [""]
+    entrypoint: [""]
 
   needs: ["build_app"]         # Chạy sau khi 'build_app' thành công
   script:
