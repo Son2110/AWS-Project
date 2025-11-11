@@ -1,49 +1,38 @@
-# Định nghĩa các bước (stages) của pipeline
 stages:
   - build
   - deploy
 
-# Stage 1: Build ứng dụng React
+# Stage 1: Build ứng dụng React (Vite)
 build_app:
   stage: build
-  # Sử dụng image Node.js (bản 18, alpine là bản nhẹ)
-  image: node:18-alpine 
+  # 💡 ĐÃ SỬA: Nâng cấp lên Node 20 để fix lỗi EBADENGINE
+  image: node:20-alpine 
   script:
-    - echo "Bắt đầu build React app..."
-    # Cài đặt dependencies (dùng npm)
-    # Nếu bạn dùng Yarn, hãy đổi 2 dòng sau thành:
-    # - yarn install
-    # - yarn build
+    - echo "Bắt đầu build React app (Vite)..."
     - npm install       
-    - npm run build     # Lệnh này sẽ tạo ra thư mục 'build/'
+    - npm run build     # Lệnh này sẽ tạo ra thư mục 'dist/'
   artifacts:
     paths:
-      # Lưu lại thư mục 'build' (kết quả của 'npm run build')
-      - build/          
-    expire_in: 1 hour   # Chỉ cần lưu tạm 1 tiếng để job 'deploy' dùng
+      # 💡 ĐÃ SỬA: Đổi từ build/ sang dist/
+      - dist/           
+    expire_in: 1 hour
   only:
-    - main              # Chỉ chạy job này trên branch 'main'
+    - main
 
 # Stage 2: Deploy lên S3 và Invalidate CloudFront
 deploy_to_s3:
   stage: deploy
-  image: 
-    name: amazon/aws-cli:latest # Dùng image chính thức của AWS
-  
-  # 💡 SỬA LỖI Ở ĐÂY:
-  # Ghi đè entrypoint của image. Image này mặc định có entrypoint là "aws",
-  # chúng ta reset nó về "" để GitLab Runner có thể chạy shell (sh -c "...")
+  image:
+    name: amazon/aws-cli:latest
     entrypoint: [""]
+  needs: ["build_app"]
+  script: |
+    echo "Đồng bộ file lên S3 bucket: $S3_BUCKET_NAME..."
+    # 💡 ĐÃ SỬA: Đổi từ ./build sang ./dist
+    aws s3 sync ./dist s3://$S3_BUCKET_NAME --delete
 
-  needs: ["build_app"]         # Chạy sau khi 'build_app' thành công
-  script:
-    # 1. Đồng bộ thư mục 'build' (từ job 'build_app') lên S3
-    - echo "Đồng bộ file lên S3 bucket: $S3_BUCKET_NAME..."
-    - aws s3 sync ./build s3://$S3_BUCKET_NAME --delete
-
-    # 2. Trigger CloudFront Invalidation
-    - echo "Trigger CloudFront Invalidation cho Distribution: $CLOUDFONT_DISTRIBUTION_ID..."
-    - aws cloudfront create-invalidation --distribution-id $CLOUDFONT_DISTRIBUTION_ID --paths "/*"
+    echo "Trigger CloudFront Invalidation cho Distribution: $CLOUDFONT_DISTRIBUTION_ID..."
+    aws cloudfront create-invalidation --distribution-id $CLOUDFONT_DISTRIBUTION_ID --paths "/*"
   
   environment:
     name: production 
