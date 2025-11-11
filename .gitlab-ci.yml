@@ -27,22 +27,22 @@ build_app:
 # Stage 2: Deploy lên S3 và Invalidate CloudFront
 deploy_to_s3:
   stage: deploy
+  image: amazon/aws-cli:latest # Dùng image chính thức của AWS
   
   # 💡 SỬA LỖI Ở ĐÂY:
-  # 'image' bây giờ là một object (cấu trúc)
-  image:
-    name: amazon/aws-cli:latest # Tên image
-    entrypoint: [""]            # Ghi đè entrypoint về rỗng
+  # Ghi đè entrypoint của image. Image này mặc định có entrypoint là "aws",
+  # chúng ta reset nó về "" để GitLab Runner có thể chạy shell (sh -c "...")
+  entrypoint: [""]
 
   needs: ["build_app"]         # Chạy sau khi 'build_app' thành công
-  script: |
+  script:
     # 1. Đồng bộ thư mục 'build' (từ job 'build_app') lên S3
-    echo "Đồng bộ file lên S3 bucket: $S3_BUCKET_NAME..."
-    aws s3 sync ./build s3://$S3_BUCKET_NAME --delete
+    - echo "Đồng bộ file lên S3 bucket: $S3_BUCKET_NAME..."
+    - aws s3 sync ./build s3://$S3_BUCKET_NAME --delete
 
     # 2. Trigger CloudFront Invalidation
-    echo "Trigger CloudFront Invalidation cho Distribution: $CLOUDFONT_DISTRIBUTION_ID..."
-    aws cloudfront create-invalidation --distribution-id $CLOUDFONT_DISTRIBUTION_ID --paths "/*"
+    - echo "Trigger CloudFront Invalidation cho Distribution: $CLOUDFONT_DISTRIBUTION_ID..."
+    - aws cloudfront create-invalidation --distribution-id $CLOUDFONT_DISTRIBUTION_ID --paths "/*"
   
   environment:
     name: production 
