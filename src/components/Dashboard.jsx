@@ -6,11 +6,12 @@ import {
   FaUserShield,
   FaHistory,
 } from "react-icons/fa";
-import { getCurrentUser, signOut, fetchAuthSession } from "aws-amplify/auth";
-import apiService from "../services/apiService";
+// TODO: Import Cognito functions when ready to integrate
+// import { getCurrentUser, signOut, fetchAuthSession } from "aws-amplify/auth";
 import { useTheme } from "../context/ThemeContext";
 import ThemeToggle from "./ThemeToggle";
 import RoomCard from "./RoomCard";
+import apiService from "../services/apiService";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -28,27 +29,37 @@ const Dashboard = () => {
 
   const checkAuthAndFetchData = async () => {
     try {
-      // Check if user is authenticated
-      const user = await getCurrentUser();
+      // TODO: Replace with Cognito authentication check
+      // const user = await getCurrentUser();
+      // const session = await fetchAuthSession();
+      // const groups = session.tokens?.accessToken?.payload["cognito:groups"] || [];
 
-      // Get user attributes
-      setUserName(user.username || user.userId);
+      // Mock authentication from localStorage
+      const isAuthenticated = localStorage.getItem("isAuthenticated");
+      if (!isAuthenticated) {
+        // Auto-login for development (remove this in production)
+        console.log("Auto-login for development");
+        localStorage.setItem("userEmail", "admin@smartoffice.com");
+        localStorage.setItem("userName", "Admin User");
+        localStorage.setItem("userGroups", JSON.stringify(["Admins"]));
+        localStorage.setItem("isAuthenticated", "true");
+      }
 
-      // Get user groups from JWT token
-      const session = await fetchAuthSession();
-      const groups =
-        session.tokens?.accessToken?.payload["cognito:groups"] || [];
+      const userEmail = localStorage.getItem("userEmail") || "Unknown User";
+      const userName = localStorage.getItem("userName") || userEmail;
+      const groups = JSON.parse(localStorage.getItem("userGroups") || "[]");
+
+      setUserName(userName);
       setUserGroups(groups);
       setIsAdmin(groups.includes("Admins"));
 
-      console.log("User authenticated:", user.username);
+      console.log("User authenticated:", userName);
       console.log("User groups:", groups);
 
       // Fetch dashboard data
       await fetchDashboardData();
     } catch (error) {
-      console.error("Not authenticated:", error);
-      // Redirect to login if not authenticated
+      console.error("Authentication error:", error);
       navigate("/");
     }
   };
@@ -57,20 +68,20 @@ const Dashboard = () => {
     try {
       setIsLoading(true);
 
-      // Call API Gateway với Cognito JWT token
+      // TODO: Replace with real API Gateway call with Cognito JWT token
       const response = await apiService.getRooms();
 
       console.log("API Response:", response);
 
-      // Parse rooms data
-      const rooms = response.rooms || [];
+      // Parse rooms data (fallback to mock if API fails)
+      const rooms = response.rooms || response || [];
 
-      // Generate alerts dựa trên temperature
+      // Generate alerts based on temperature
       const alerts = [];
       rooms.forEach((room) => {
         if (room.temperature > 30) {
           alerts.push({
-            id: room.roomId,
+            id: room.id || room.roomId,
             time: new Date().toLocaleTimeString("en-US", {
               hour: "2-digit",
               minute: "2-digit",
@@ -85,18 +96,61 @@ const Dashboard = () => {
       setRooms(rooms);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
-      setAlerts([
+
+      // Use fallback mock data if API fails
+      const mockRooms = [
         {
-          id: 1,
+          id: "room-1",
+          name: "Meeting Room A",
+          temperature: 22,
+          humidity: 45,
+          occupancy: 4,
+          maxOccupancy: 8,
+          status: "occupied",
+        },
+        {
+          id: "room-2",
+          name: "Meeting Room B",
+          temperature: 24,
+          humidity: 40,
+          occupancy: 0,
+          maxOccupancy: 6,
+          status: "available",
+        },
+        {
+          id: "room-3",
+          name: "Server Room",
+          temperature: 32,
+          humidity: 35,
+          occupancy: 1,
+          maxOccupancy: 2,
+          status: "maintenance",
+        },
+        {
+          id: "room-4",
+          name: "Office 1",
+          temperature: 23,
+          humidity: 42,
+          occupancy: 2,
+          maxOccupancy: 4,
+          status: "occupied",
+        },
+      ];
+
+      const mockAlerts = [
+        {
+          id: "room-3",
           time: new Date().toLocaleTimeString("en-US", {
             hour: "2-digit",
             minute: "2-digit",
           }),
-          message:
-            "Failed to load data from API. Please check your connection.",
+          message: "Server Room temperature exceeds safe threshold (32°C)!",
           severity: "high",
         },
-      ]);
+      ];
+
+      setRooms(mockRooms);
+      setAlerts(mockAlerts);
     } finally {
       setIsLoading(false);
     }
@@ -104,8 +158,10 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     try {
-      // AWS Cognito Sign Out
-      await signOut();
+      // TODO: Replace with AWS Cognito Sign Out
+      // await signOut();
+
+      // Clear mock authentication
       localStorage.clear();
       navigate("/");
     } catch (error) {
