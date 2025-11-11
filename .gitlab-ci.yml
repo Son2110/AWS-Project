@@ -29,12 +29,14 @@ deploy_to_s3:
   stage: deploy
   image: amazon/aws-cli:latest # Dùng image chính thức của AWS
   needs: ["build_app"]         # Chạy sau khi 'build_app' thành công
-  script:
+  script: |
     # 1. Đồng bộ thư mục 'build' (từ job 'build_app') lên S3
-    - aws s3 sync ./build s3://$S3_BUCKET_NAME --delete
+    echo "Đồng bộ file lên S3 bucket: $S3_BUCKET_NAME..."
+    aws s3 sync ./build s3://$S3_BUCKET_NAME --delete
 
     # 2. Trigger CloudFront Invalidation
-    - aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
+    echo "Trigger CloudFront Invalidation cho Distribution: $CLOUDFONT_DISTRIBUTION_ID..."
+    aws cloudfront create-invalidation --distribution-id $CLOUDFONT_DISTRIBUTION_ID --paths "/*"
   
   environment:
     name: production 
