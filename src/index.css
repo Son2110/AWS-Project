@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+/* Light mode colors (default) */
+:root {
+  --bg-primary: rgb(243 244 246);
+  --bg-secondary: rgb(255 255 255);
+  --bg-card: rgb(255 255 255);
+  --text-primary: rgb(31 41 55);
+  --text-secondary: rgb(75 85 99);
+  --text-tertiary: rgb(107 114 128);
+  --border-color: rgb(229 231 235);
+  --input-bg: rgb(255 255 255);
+  --shadow: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode colors */
+[data-theme="dark"] {
+  --bg-primary: rgb(17 24 39);
+  --bg-secondary: rgb(31 41 55);
+  --bg-card: rgb(31 41 55);
+  --text-primary: rgb(243 244 246);
+  --text-secondary: rgb(209 213 219);
+  --text-tertiary: rgb(156 163 175);
+  --border-color: rgb(55 65 81);
+  --input-bg: rgb(55 65 81);
+  --shadow: rgba(0, 0, 0, 0.3);
+}
+
+/* Apply theme colors */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
