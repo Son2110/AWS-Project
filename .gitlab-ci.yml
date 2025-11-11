@@ -28,6 +28,12 @@ build_app:
 deploy_to_s3:
   stage: deploy
   image: amazon/aws-cli:latest # Dùng image chính thức của AWS
+  
+  # 💡 SỬA LỖI Ở ĐÂY:
+  # Ghi đè entrypoint của image. Image này mặc định có entrypoint là "aws",
+  # chúng ta reset nó về "" để GitLab Runner có thể chạy shell (sh -c "...")
+  entrypoint: [""]
+
   needs: ["build_app"]         # Chạy sau khi 'build_app' thành công
   script: |
     # 1. Đồng bộ thư mục 'build' (từ job 'build_app') lên S3
