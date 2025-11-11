@@ -7,7 +7,6 @@ import {
   FaHistory,
 } from "react-icons/fa";
 import { getCurrentUser, signOut, fetchAuthSession } from "aws-amplify/auth";
-import apiService from "../services/apiService";
 import { useTheme } from "../context/ThemeContext";
 import ThemeToggle from "./ThemeToggle";
 import RoomCard from "./RoomCard";
