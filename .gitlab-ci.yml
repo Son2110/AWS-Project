@@ -32,7 +32,7 @@ deploy_to_s3:
     aws s3 sync ./dist s3://$S3_BUCKET_NAME --delete
 
     echo "Trigger CloudFront Invalidation cho Distribution: $CLOUDFONT_DISTRIBUTION_ID..."
-    aws cloudfront create-invalidation --distribution-id $CLOUDFONT_DISTRIBUTION_ID --paths "/*"
+    aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
   
   environment:
     name: production 
