@@ -30,7 +30,7 @@ deploy_to_s3:
   image: amazon/aws-cli:latest # Dùng image chính thức của AWS
   needs: ["build_app"]         # Chạy sau khi 'build_app' thành công
   script:
-    |
+    
     # 1. Đồng bộ thư mục 'build' (từ job 'build_app') lên S3
     - echo "Đồng bộ file lên S3 bucket: $S3_BUCKET_NAME..."
     - aws s3 sync ./build s3://$S3_BUCKET_NAME --delete
