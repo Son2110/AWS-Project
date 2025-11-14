@@ -1,9 +1,16 @@
 import { useState } from "react";
 import { FaEye, FaEyeSlash, FaMoon, FaSun } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-// TODO: Import AWS Amplify for Cognito authentication
-// import { signIn } from "aws-amplify/auth";
 import { useTheme } from "../context/ThemeContext";
+
+//helper
+const parseJwt = (token) => {
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch (e) {
+    return null;
+  }
+};
 
 const Login = () => {
   const navigate = useNavigate();
@@ -55,54 +62,42 @@ const Login = () => {
 
     if (Object.keys(newErrors).length === 0) {
       setIsLoading(true);
+      setErrors({});
+      const API_URL = `${import.meta.env.VITE_API_BASE_URL}/login`;
       try {
-        // TODO: Replace with AWS Cognito Sign In
-        // const { isSignedIn, nextStep } = await signIn({
-        //   username: formData.email,
-        //   password: formData.password,
-        // });
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: formData.email,
+            password: formData.password,
+          }),
+        });
 
-        // Mock login for development - replace with real Cognito
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API delay
+        const responseData = await response.json();
 
-        // Mock validation
-        if (
-          formData.email === "admin@smartoffice.com" &&
-          formData.password === "password123"
-        ) {
-          // Admin user
-          localStorage.setItem("userEmail", formData.email);
-          localStorage.setItem("userName", "Admin User");
-          localStorage.setItem("userGroups", JSON.stringify(["Admins"]));
-          localStorage.setItem("isAuthenticated", "true");
-          navigate("/dashboard");
-        } else if (
-          formData.email === "user@smartoffice.com" &&
-          formData.password === "password123"
-        ) {
-          // Regular user
-          localStorage.setItem("userEmail", formData.email);
-          localStorage.setItem("userName", "Regular User");
-          localStorage.setItem("userGroups", JSON.stringify(["Users"]));
-          localStorage.setItem("isAuthenticated", "true");
-          navigate("/dashboard");
-        } else {
+        if (!response.ok || responseData.statusCode >= 400) {
+          const errorBody = JSON.parse(responseData.body || "{}");
           setErrors({
-            general:
-              "Invalid email or password. Try admin@smartoffice.com / user@smartoffice.com with password: password123",
+            general: errorBody.message || "Invalid email or password.",
           });
-        }
+        } else {
+          //login successfully
+          const loginResult = JSON.parse(responseData.body);
 
-        // TODO: Handle Cognito sign in steps
-        // if (isSignedIn) {
-        //   const user = await getCurrentUser();
-        //   const groups = user.signInUserSession.accessToken.payload["cognito:groups"];
-        //   localStorage.setItem("userEmail", formData.email);
-        //   localStorage.setItem("userGroups", JSON.stringify(groups));
-        //   navigate("/dashboard");
-        // } else if (nextStep.signInStep === "CONFIRM_SIGN_UP") {
-        //   setErrors({ general: "Please verify your email first" });
-        // }
+          const idTokenData = parseJwt(loginResult.id_token);
+          const userGroups = idTokenData["cognito:groups"] || [];
+
+          localStorage.setItem("access_token", loginResult.access_token);
+          localStorage.setItem("id_token", loginResult.id_token);
+          localStorage.setItem("refresh_token", loginResult.refresh_token);
+          localStorage.setItem("userEmail", idTokenData.email);
+          localStorage.setItem("userGroups", JSON.stringify(userGroups));
+          localStorage.setItem("isAuthenticated", "true");
+          navigate("/dashboard");
+        }
       } catch (error) {
         console.error("Login error:", error);
         setErrors({
