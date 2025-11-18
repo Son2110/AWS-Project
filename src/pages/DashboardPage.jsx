@@ -4,11 +4,11 @@ import { FaExclamationTriangle, FaUserShield, FaHistory } from "react-icons/fa";
 // TODO: Import Cognito functions when ready to integrate
 // import { getCurrentUser, signOut, fetchAuthSession } from "aws-amplify/auth";
 import { useTheme } from "../context/ThemeContext";
-import Navbar from "./Navbar";
-import RoomCard from "./RoomCard";
+import Navbar from "../components/layout/Navbar";
+import RoomCard from "../components/room/RoomCard";
 import apiService from "../services/apiService";
 
-const Dashboard = () => {
+const DashboardPage = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const [userName, setUserName] = useState("Loading...");
@@ -29,15 +29,11 @@ const Dashboard = () => {
       // const session = await fetchAuthSession();
       // const groups = session.tokens?.accessToken?.payload["cognito:groups"] || [];
 
-      // Mock authentication from localStorage
+      // Check authentication from localStorage
       const isAuthenticated = localStorage.getItem("isAuthenticated");
       if (!isAuthenticated) {
-        // Auto-login for development (remove this in production)
-        console.log("Auto-login for development");
-        localStorage.setItem("userEmail", "admin@smartoffice.com");
-        localStorage.setItem("userName", "Admin User");
-        localStorage.setItem("userGroups", JSON.stringify(["Admins"]));
-        localStorage.setItem("isAuthenticated", "true");
+        navigate("/");
+        return;
       }
 
       const userEmail = localStorage.getItem("userEmail") || "Unknown User";
@@ -46,7 +42,7 @@ const Dashboard = () => {
 
       setUserName(userName);
       setUserGroups(groups);
-      setIsAdmin(groups.includes("Admins"));
+      setIsAdmin(groups.includes("Admin"));
 
       console.log("User authenticated:", userName);
       console.log("User groups:", groups);
@@ -176,40 +172,47 @@ const Dashboard = () => {
             Office Overview
           </h2>
 
-          {/* Admin Quick Access Buttons */}
+          {/* Quick Access Buttons */}
           <div className="flex flex-wrap gap-2 sm:gap-3">
-            <button
-              onClick={() => navigate("/managers")}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-semibold transition-colors duration-300 hover:shadow-lg text-sm sm:text-base"
-              style={{
-                backgroundColor: isDark
-                  ? "rgb(55, 65, 81)"
-                  : "rgb(255, 255, 255)",
-                color: isDark ? "rgb(147, 197, 253)" : "rgb(37, 99, 235)",
-                border: isDark
-                  ? "2px solid rgb(75, 85, 99)"
-                  : "2px solid rgb(219, 234, 254)",
-              }}
-            >
-              <FaUserShield />
-              <span className="hidden sm:inline">Managers</span>
-            </button>
-            <button
-              onClick={() => navigate("/activity-logs")}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-semibold transition-colors duration-300 hover:shadow-lg text-sm sm:text-base"
-              style={{
-                backgroundColor: isDark
-                  ? "rgb(55, 65, 81)"
-                  : "rgb(255, 255, 255)",
-                color: isDark ? "rgb(147, 197, 253)" : "rgb(37, 99, 235)",
-                border: isDark
-                  ? "2px solid rgb(75, 85, 99)"
-                  : "2px solid rgb(219, 234, 254)",
-              }}
-            >
-              <FaHistory />
-              <span className="hidden sm:inline">Activity Logs</span>
-            </button>
+            {/* Managers button - Admin only */}
+            {isAdmin && (
+              <button
+                onClick={() => navigate("/managers")}
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-semibold transition-colors duration-300 hover:shadow-lg text-sm sm:text-base"
+                style={{
+                  backgroundColor: isDark
+                    ? "rgb(55, 65, 81)"
+                    : "rgb(255, 255, 255)",
+                  color: isDark ? "rgb(147, 197, 253)" : "rgb(37, 99, 235)",
+                  border: isDark
+                    ? "2px solid rgb(75, 85, 99)"
+                    : "2px solid rgb(219, 234, 254)",
+                }}
+              >
+                <FaUserShield />
+                <span className="hidden sm:inline">Managers</span>
+              </button>
+            )}
+
+            {/* Activity Logs button - Admin only */}
+            {isAdmin && (
+              <button
+                onClick={() => navigate("/activity-logs")}
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-semibold transition-colors duration-300 hover:shadow-lg text-sm sm:text-base"
+                style={{
+                  backgroundColor: isDark
+                    ? "rgb(55, 65, 81)"
+                    : "rgb(255, 255, 255)",
+                  color: isDark ? "rgb(147, 197, 253)" : "rgb(37, 99, 235)",
+                  border: isDark
+                    ? "2px solid rgb(75, 85, 99)"
+                    : "2px solid rgb(219, 234, 254)",
+                }}
+              >
+                <FaHistory />
+                <span className="hidden sm:inline">Activity Logs</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -266,4 +269,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default DashboardPage;

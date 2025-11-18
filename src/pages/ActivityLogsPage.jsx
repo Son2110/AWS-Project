@@ -12,9 +12,9 @@ import {
   FaUser,
 } from "react-icons/fa";
 import { useTheme } from "../context/ThemeContext";
-import ThemeToggle from "./ThemeToggle";
+import ThemeToggle from "../components/layout/ThemeToggle";
 
-const ActivityLogs = () => {
+const ActivityLogsPage = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const [logs, setLogs] = useState([]);
@@ -805,4 +805,4 @@ const ActivityLogs = () => {
   );
 };
 
-export default ActivityLogs;
+export default ActivityLogsPage;

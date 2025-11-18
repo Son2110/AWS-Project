@@ -12,7 +12,7 @@ const parseJwt = (token) => {
   }
 };
 
-const Login = () => {
+const LoginPage = () => {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
@@ -256,7 +256,7 @@ const Login = () => {
                   color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
                 }}
               >
-                Email / Username
+                Email
               </label>
               <input
                 type="text"
@@ -358,15 +358,16 @@ const Login = () => {
 
             {/* Forgot Password Link */}
             <div className="text-right">
-              <a
-                href="#"
-                className="text-sm font-medium transition-colors duration-300"
+              <button
+                type="button"
+                onClick={() => navigate("/forgot-password")}
+                className="text-sm font-medium transition-colors duration-300 hover:underline"
                 style={{
                   color: isDark ? "rgb(147, 197, 253)" : "rgb(37, 99, 235)",
                 }}
               >
                 Forgot Password?
-              </a>
+              </button>
             </div>
 
             {/* Submit Button */}
@@ -400,4 +401,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default LoginPage;

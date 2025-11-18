@@ -4,7 +4,7 @@ import {
   FaLightbulb,
   FaSnowflake,
 } from "react-icons/fa";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "../../context/ThemeContext";
 
 const RoomCard = ({ room, onClick }) => {
   const { isDark } = useTheme();

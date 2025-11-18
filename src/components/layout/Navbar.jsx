@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaSignOutAlt, FaBars, FaTimes } from "react-icons/fa";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "../../context/ThemeContext";
 import ThemeToggle from "./ThemeToggle";
 
 const Navbar = ({ userName = "User" }) => {
