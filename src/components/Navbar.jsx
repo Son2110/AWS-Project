@@ -10,35 +10,38 @@ const Navbar = ({ userName = "User" }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
-    //1. lay token tu local storage
     const idToken = localStorage.getItem("id_token");
-
-    //lay endpoint tu env
+    const accessToken = localStorage.getItem("access_token");
     const API_URL = `${import.meta.env.VITE_API_BASE_URL}/logout`;
 
-    try {
-      //2. Goi api logout
-      await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-    } catch (error) {
-      console.error("Logout API call failed: ", error);
-    } finally {
-      // 3. (QUAN TRỌNG NHẤT) Xóa mọi thứ khỏi localStorage
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("id_token");
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem("userEmail");
-      localStorage.removeItem("userGroups");
-      localStorage.removeItem("isAuthenticated");
-
-      //4. dieu huong ve login
-      navigate("/");
+    if (idToken && accessToken) {
+      try {
+        await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            access_token: accessToken,
+          }),
+        });
+      } catch (error) {
+        console.error("Logout API call failed:", error);
+      }
     }
+
+    // Xóa tất cả tokens khỏi localStorage
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("id_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userName");
+    localStorage.removeItem("userGroups");
+    localStorage.removeItem("isAuthenticated");
+
+    // Điều hướng về login
+    navigate("/");
   };
 
   return (

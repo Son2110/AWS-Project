@@ -78,24 +78,53 @@ const Login = () => {
 
         const responseData = await response.json();
 
-        if (!response.ok || responseData.statusCode >= 400) {
-          const errorBody = JSON.parse(responseData.body || "{}");
-          setErrors({
-            general: errorBody.message || "Invalid email or password.",
-          });
-        } else {
-          //login successfully
-          const loginResult = JSON.parse(responseData.body);
+        console.log("Response status:", response.status);
+        console.log("Response data:", responseData);
 
+        // Check if response is not ok (HTTP error)
+        if (!response.ok) {
+          // Handle different response formats
+          let errorMessage = "Invalid email or password.";
+
+          if (responseData.body) {
+            // Lambda Proxy format: {statusCode, body: "stringified json"}
+            const errorBody = JSON.parse(responseData.body);
+            errorMessage = errorBody.message || errorMessage;
+          } else if (responseData.message) {
+            // Direct format: {message, ...}
+            errorMessage = responseData.message;
+          }
+
+          setErrors({ general: errorMessage });
+        } else {
+          // Login successful - handle different response formats
+          let loginResult;
+
+          if (responseData.body) {
+            // Lambda Proxy format: {statusCode: 200, body: "stringified json"}
+            loginResult = JSON.parse(responseData.body);
+          } else {
+            // Direct format: {message, access_token, ...}
+            loginResult = responseData;
+          }
+
+          // Parse ID token to get user info
           const idTokenData = parseJwt(loginResult.id_token);
           const userGroups = idTokenData["cognito:groups"] || [];
 
+          // Store tokens and user info
           localStorage.setItem("access_token", loginResult.access_token);
           localStorage.setItem("id_token", loginResult.id_token);
           localStorage.setItem("refresh_token", loginResult.refresh_token);
           localStorage.setItem("userEmail", idTokenData.email);
+          localStorage.setItem(
+            "userName",
+            idTokenData.name || idTokenData.email
+          );
           localStorage.setItem("userGroups", JSON.stringify(userGroups));
           localStorage.setItem("isAuthenticated", "true");
+
+          console.log("Login successful, redirecting to dashboard...");
           navigate("/dashboard");
         }
       } catch (error) {
