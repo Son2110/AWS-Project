@@ -78,9 +78,6 @@ const LoginPage = () => {
 
         const responseData = await response.json();
 
-        console.log("Response status:", response.status);
-        console.log("Response data:", responseData);
-
         // Check if response is not ok (HTTP error)
         if (!response.ok) {
           // Handle different response formats
@@ -112,18 +109,27 @@ const LoginPage = () => {
           const idTokenData = parseJwt(loginResult.id_token);
           const userGroups = idTokenData["cognito:groups"] || [];
 
+          // Lấy user info từ response.user (có name từ DynamoDB)
+          const userInfo = loginResult.user || {};
+
           // Store tokens and user info
           localStorage.setItem("access_token", loginResult.access_token);
           localStorage.setItem("id_token", loginResult.id_token);
           localStorage.setItem("refresh_token", loginResult.refresh_token);
-          localStorage.setItem("userEmail", idTokenData.email);
+          localStorage.setItem("userId", userInfo.userId || "");
           localStorage.setItem(
-            "userName",
-            idTokenData.name || idTokenData.email
+            "userEmail",
+            userInfo.email || idTokenData.email
           );
-          localStorage.setItem("userGroups", JSON.stringify(userGroups));
+          localStorage.setItem("userName", userInfo.name || idTokenData.email);
+          localStorage.setItem("userRole", userInfo.role || "manager");
+          localStorage.setItem(
+            "userGroups",
+            JSON.stringify(userInfo.cognitoGroups || userGroups)
+          );
           localStorage.setItem("isAuthenticated", "true");
 
+          console.log("Stored userName:", localStorage.getItem("userName"));
           console.log("Login successful, redirecting to dashboard...");
           navigate("/dashboard");
         }

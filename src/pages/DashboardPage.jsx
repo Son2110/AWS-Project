@@ -36,11 +36,11 @@ const DashboardPage = () => {
         return;
       }
 
-      const userEmail = localStorage.getItem("userEmail") || "Unknown User";
-      const userName = localStorage.getItem("userName") || userEmail;
+      const userName = localStorage.getItem("userName") || "Unknown User";
+      const userEmail = localStorage.getItem("userEmail") || "";
       const groups = JSON.parse(localStorage.getItem("userGroups") || "[]");
 
-      setUserName(userName);
+      setUserName(userName); // Hiển thị name từ DynamoDB
       setUserGroups(groups);
       setIsAdmin(groups.includes("Admin"));
 

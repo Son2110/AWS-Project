@@ -1,6 +1,12 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaSignOutAlt, FaBars, FaTimes } from "react-icons/fa";
+import {
+  FaSignOutAlt,
+  FaBars,
+  FaTimes,
+  FaUserCircle,
+  FaCog,
+} from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
 import ThemeToggle from "./ThemeToggle";
 
@@ -8,6 +14,104 @@ const Navbar = ({ userName = "User" }) => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [profileData, setProfileData] = useState({
+    name: "",
+    email: "",
+  });
+  const [errors, setErrors] = useState({});
+  const dropdownRef = useRef(null);
+
+  // Close dropdown khi click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowProfileDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Load profile data khi mở modal
+  useEffect(() => {
+    if (showProfileModal) {
+      setProfileData({
+        name: localStorage.getItem("userName") || "",
+        email: localStorage.getItem("userEmail") || "",
+      });
+    }
+  }, [showProfileModal]);
+
+  const handleOpenProfileModal = () => {
+    setShowProfileDropdown(false);
+    setShowProfileModal(true);
+  };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setErrors({});
+
+    // Validation
+    const newErrors = {};
+    if (!profileData.name.trim()) {
+      newErrors.name = "Name is required";
+    }
+    if (!profileData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(profileData.email)) {
+      newErrors.email = "Email is invalid";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setIsUpdating(true);
+
+    try {
+      const userId = localStorage.getItem("userId");
+      const idToken = localStorage.getItem("id_token");
+      const API_URL = `${import.meta.env.VITE_API_BASE_URL}/profile-update`;
+
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          userId: userId,
+          updates: {
+            name: profileData.name,
+            email: profileData.email,
+          },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Update localStorage
+        localStorage.setItem("userName", profileData.name);
+        localStorage.setItem("userEmail", profileData.email);
+
+        // Close modal and refresh page
+        setShowProfileModal(false);
+        window.location.reload();
+      } else {
+        setErrors({ general: data.body || "Failed to update profile" });
+      }
+    } catch (error) {
+      console.error("Update profile error:", error);
+      setErrors({ general: "Failed to update profile. Please try again." });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const handleLogout = async () => {
     const idToken = localStorage.getItem("id_token");
@@ -93,22 +197,73 @@ const Navbar = ({ userName = "User" }) => {
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-3 lg:gap-4">
             <ThemeToggle />
-            <span
-              className="font-medium transition-colors duration-300 truncate max-w-[150px]"
-              style={{
-                color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-              }}
-              title={userName}
-            >
-              {userName}
-            </span>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-3 lg:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm lg:text-base"
-            >
-              <FaSignOutAlt />
-              <span className="hidden lg:inline">Logout</span>
-            </button>
+
+            {/* Profile Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-opacity-10 hover:bg-gray-500 transition-all"
+                style={{
+                  color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
+                }}
+              >
+                <FaUserCircle className="text-xl" />
+                <span
+                  className="font-medium truncate max-w-[150px]"
+                  title={userName}
+                >
+                  {userName}
+                </span>
+              </button>
+
+              {/* Dropdown Menu */}
+              {showProfileDropdown && (
+                <div
+                  className="absolute right-0 mt-2 w-56 rounded-lg shadow-xl z-50 overflow-hidden"
+                  style={{
+                    backgroundColor: isDark
+                      ? "rgb(31, 41, 55)"
+                      : "rgb(255, 255, 255)",
+                    border: isDark
+                      ? "1px solid rgb(75, 85, 99)"
+                      : "1px solid rgb(229, 231, 235)",
+                  }}
+                >
+                  <div className="py-2">
+                    <button
+                      onClick={handleOpenProfileModal}
+                      className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-opacity-10 hover:bg-gray-500 transition-colors"
+                      style={{
+                        color: isDark
+                          ? "rgb(209, 213, 219)"
+                          : "rgb(55, 65, 81)",
+                      }}
+                    >
+                      <FaCog />
+                      <span>Manage account</span>
+                    </button>
+                    <div
+                      className="my-1 border-t"
+                      style={{
+                        borderColor: isDark
+                          ? "rgb(75, 85, 99)"
+                          : "rgb(229, 231, 235)",
+                      }}
+                    />
+                    <button
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                        handleLogout();
+                      }}
+                      className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900 dark:hover:bg-opacity-20 transition-colors text-red-600"
+                    >
+                      <FaSignOutAlt />
+                      <span>Sign out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Mobile Menu Button */}
@@ -160,6 +315,175 @@ const Navbar = ({ userName = "User" }) => {
           </div>
         )}
       </div>
+
+      {/* Profile Update Modal */}
+      {showProfileModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.15)" }}
+        >
+          <div
+            className="rounded-xl shadow-2xl max-w-md w-full transition-colors duration-300"
+            style={{
+              backgroundColor: isDark
+                ? "rgb(31, 41, 55)"
+                : "rgb(255, 255, 255)",
+            }}
+          >
+            <div className="p-6">
+              <h2
+                className="text-2xl font-bold mb-6"
+                style={{
+                  color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
+                }}
+              >
+                Manage Account
+              </h2>
+
+              {/* Error Message */}
+              {errors.general && (
+                <div
+                  className="mb-4 p-3 border rounded-lg"
+                  style={{
+                    backgroundColor: isDark
+                      ? "rgba(127, 29, 29, 0.3)"
+                      : "rgb(254, 242, 242)",
+                    borderColor: isDark
+                      ? "rgb(153, 27, 27)"
+                      : "rgb(254, 202, 202)",
+                  }}
+                >
+                  <p
+                    className="text-sm"
+                    style={{
+                      color: isDark ? "rgb(252, 165, 165)" : "rgb(220, 38, 38)",
+                    }}
+                  >
+                    {errors.general}
+                  </p>
+                </div>
+              )}
+
+              <form onSubmit={handleUpdateProfile} className="space-y-4">
+                {/* Name Field */}
+                <div>
+                  <label
+                    className="block text-sm font-medium mb-2"
+                    style={{
+                      color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
+                    }}
+                  >
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={profileData.name}
+                    onChange={(e) => {
+                      setProfileData({ ...profileData, name: e.target.value });
+                      setErrors({ ...errors, name: "" });
+                    }}
+                    className="w-full px-4 py-2 rounded-lg border-2 transition-colors duration-300"
+                    style={{
+                      backgroundColor: isDark
+                        ? "rgb(55, 65, 81)"
+                        : "rgb(249, 250, 251)",
+                      borderColor: errors.name
+                        ? "rgb(239, 68, 68)"
+                        : isDark
+                        ? "rgb(75, 85, 99)"
+                        : "rgb(209, 213, 219)",
+                      color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
+                    }}
+                    disabled={isUpdating}
+                  />
+                  {errors.name && (
+                    <p
+                      className="mt-1 text-sm"
+                      style={{
+                        color: isDark
+                          ? "rgb(252, 165, 165)"
+                          : "rgb(239, 68, 68)",
+                      }}
+                    >
+                      {errors.name}
+                    </p>
+                  )}
+                </div>
+
+                {/* Email Field */}
+                <div>
+                  <label
+                    className="block text-sm font-medium mb-2"
+                    style={{
+                      color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
+                    }}
+                  >
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={profileData.email}
+                    onChange={(e) => {
+                      setProfileData({ ...profileData, email: e.target.value });
+                      setErrors({ ...errors, email: "" });
+                    }}
+                    className="w-full px-4 py-2 rounded-lg border-2 transition-colors duration-300"
+                    style={{
+                      backgroundColor: isDark
+                        ? "rgb(55, 65, 81)"
+                        : "rgb(249, 250, 251)",
+                      borderColor: errors.email
+                        ? "rgb(239, 68, 68)"
+                        : isDark
+                        ? "rgb(75, 85, 99)"
+                        : "rgb(209, 213, 219)",
+                      color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
+                    }}
+                    disabled={isUpdating}
+                  />
+                  {errors.email && (
+                    <p
+                      className="mt-1 text-sm"
+                      style={{
+                        color: isDark
+                          ? "rgb(252, 165, 165)"
+                          : "rgb(239, 68, 68)",
+                      }}
+                    >
+                      {errors.email}
+                    </p>
+                  )}
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowProfileModal(false)}
+                    disabled={isUpdating}
+                    className="flex-1 px-4 py-2 rounded-lg border-2 font-semibold transition-colors"
+                    style={{
+                      borderColor: isDark
+                        ? "rgb(75, 85, 99)"
+                        : "rgb(209, 213, 219)",
+                      color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUpdating}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isUpdating ? "Updating..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
