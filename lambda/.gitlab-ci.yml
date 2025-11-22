@@ -1,0 +1,28 @@
+deploy_lambda:
+  stage: deploy
+  image: amazon/aws-cli:latest
+  # Chỉ chạy khi có thay đổi trong folder lambda
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - lambda/**/*
+  before_script:
+    - yum install -y zip
+  script:
+    - echo "--- Deploying Lambda Functions ---"
+    - cd lambda
+    - |
+      for file in *.py; do
+        func_name=$(basename "$file" .py)
+        zip -j "${func_name}.zip" "$file"
+        
+        # LƯU Ý: Ở đây dùng biến S3_BUCKET_LAMBDA
+        aws s3 cp "${func_name}.zip" s3://$S3_BUCKET_LAMBDA/functions/${func_name}.zip
+        
+        aws lambda update-function-code \
+          --function-name "$func_name" \
+          --s3-bucket $S3_BUCKET_LAMBDA \
+          --s3-key "functions/${func_name}.zip"
+          
+        rm "${func_name}.zip"
+      done
