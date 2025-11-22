@@ -1,28 +1,40 @@
-deploy_lambda:
+deploy_lambda_job:
   stage: deploy
   image: amazon/aws-cli:latest
-  # Chỉ chạy khi có thay đổi trong folder lambda
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       changes:
         - lambda/**/*
   before_script:
     - yum install -y zip
-  script:
-    - echo "--- Deploying Lambda Functions ---"
-    - cd lambda
-    - |
+  script: |
+    echo "--- Bắt đầu deploy Lambda (Chạy song song) ---"
+
+    cd lambda
+
+    # Kiểm tra xem có file .py nào không để tránh lỗi nếu folder rỗng
+    if ls *.py 1> /dev/null 2>&1; then
       for file in *.py; do
         func_name=$(basename "$file" .py)
+        echo ">>> Đang xử lý: $func_name"
+
+        # 1. Zip file
         zip -j "${func_name}.zip" "$file"
         
-        # LƯU Ý: Ở đây dùng biến S3_BUCKET_LAMBDA
-        aws s3 cp "${func_name}.zip" s3://$S3_BUCKET_LAMBDA/functions/${func_name}.zip
+        # 2. Upload S3
+        echo "Upload $func_name lên S3..."
+        aws s3 cp "${func_name}.zip" "s3://$S3_BUCKET_LAMBDA/functions/${func_name}.zip"
         
+        # 3. Update Lambda
+        echo "Update code cho Lambda function..."
         aws lambda update-function-code \
           --function-name "$func_name" \
-          --s3-bucket $S3_BUCKET_LAMBDA \
+          --s3-bucket "$S3_BUCKET_LAMBDA" \
           --s3-key "functions/${func_name}.zip"
           
+        # Dọn dẹp
         rm "${func_name}.zip"
       done
+    else
+      echo "Không tìm thấy file .py nào trong thư mục lambda."
+    fi
