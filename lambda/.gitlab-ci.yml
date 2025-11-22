@@ -25,7 +25,7 @@ deploy_lambda_job:
         
         # 2. Upload S3
         echo "Upload $func_name lên S3..."
-        aws s3 cp "${func_name}.zip" "s3://$S3_BUCKET_LAMBDA/functions/${func_name}.zip"
+        aws s3 cp "${func_name}.zip" "s3://$S3_BUCKET_LAMBDA/functions/${func_name}.zip" --region $AWS_DEFAULT_REGION
         
         # 3. Update Lambda
         echo "Update code cho Lambda function..."
@@ -33,6 +33,7 @@ deploy_lambda_job:
           --function-name "$func_name" \
           --s3-bucket "$S3_BUCKET_LAMBDA" \
           --s3-key "functions/${func_name}.zip"
+          --region $AWS_DEFAULT_REGION
           
         # Dọn dẹp
         rm "${func_name}.zip"
