@@ -3,10 +3,9 @@ stages:
   - build
   - deploy
 
-workflow:
-  rules:
-    - if: $CI_MERGE_REQUEST_ID # Chạy nếu là Merge Request
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH # Chạy nếu push vào main
+include:
+  - local: "/lambda/.gitlab-ci.yml"
+  - local: "/src/.gitlab-ci.yml"
 
 check_source_branch:
   stage: .pre
@@ -24,7 +23,3 @@ check_source_branch:
     - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
   tags:
     - runner
-
-include:
-  - local: "/lambda/.gitlab-ci.yml"
-  - local: "/src/.gitlab-ci.yml"
