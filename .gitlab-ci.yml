@@ -29,5 +29,3 @@ check_source_branch:
       fi
   rules:
     - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
-  tags:
-    - runner
