@@ -7,6 +7,14 @@ include:
   - local: "/lambda/.gitlab-ci.yml"
   - local: "/src/.gitlab-ci.yml"
 
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: always
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+      when: always
+    - when: never
+
 check_source_branch:
   stage: .pre
   script:
