@@ -1,5 +1,4 @@
 stages:
-  - .pre
   - build
   - deploy
 
@@ -16,7 +15,7 @@ workflow:
     - when: never
 
 check_source_branch:
-  stage: .pre
+  stage: build
   script:
     - echo "Kiểm tra nhánh nguồn..."
     - |
