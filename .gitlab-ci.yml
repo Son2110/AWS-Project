@@ -1,4 +1,5 @@
 stages:
+  - .pre
   - build
   - deploy
 
@@ -12,10 +13,12 @@ workflow:
       when: always
     - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
       when: always
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"'
+      when: always
     - when: never
 
 check_source_branch:
-  stage: build
+  stage: .pre
   script:
     - echo "Kiểm tra nhánh nguồn..."
     - |
