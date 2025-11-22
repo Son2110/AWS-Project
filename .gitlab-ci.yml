@@ -2,6 +2,23 @@ stages:
   - build
   - deploy
 
+check_source_branch:
+  stage: .pre
+  script:
+    - echo "Kiểm tra nhánh nguồn..."
+    - |
+      if [[ "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" != "dev" ]]; then
+        echo "❌ LỖI: Bạn chỉ được phép merge vào main từ nhánh 'dev'."
+        echo "Nhánh hiện tại của bạn là: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+        exit 1
+      else
+        echo "✅ Hợp lệ: Merge từ dev."
+      fi
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+  tags:
+    - runner
+
 include:
   - local: "/lambda/.gitlab-ci.yml"
   - local: "/src/.gitlab-ci.yml"
