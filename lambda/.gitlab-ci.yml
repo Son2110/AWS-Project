@@ -1,7 +1,8 @@
 deploy_lambda_job:
   stage: deploy
-  image: amazon/aws-cli:latest
-  entrypoint: [""]
+  image:
+    name: amazon/aws-cli:latest
+    entrypoint: [""]
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       changes:
