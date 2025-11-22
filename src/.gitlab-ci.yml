@@ -12,8 +12,12 @@ build_app:
       # 💡 ĐÃ SỬA: Đổi từ build/ sang dist/
       - dist/
     expire_in: 1 hour
-  only:
-    - main
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "dev"'
+      when: always
+    - if: "$CI_PIPELINE_SOURCE =~ /merge_request|merge_request_event|merge_request_pipeline/"
+      when: always
+    - when: never
 
 # Stage 2: Deploy lên S3 và Invalidate CloudFront
 deploy_to_s3:
