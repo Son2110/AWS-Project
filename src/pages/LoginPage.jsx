@@ -1,10 +1,18 @@
 import { useState } from "react";
 import { FaEye, FaEyeSlash, FaMoon, FaSun } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { signIn } from "aws-amplify/auth";
 import { useTheme } from "../context/ThemeContext";
 
-const Login = () => {
+//helper
+const parseJwt = (token) => {
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch (e) {
+    return null;
+  }
+};
+
+const LoginPage = () => {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
@@ -54,48 +62,82 @@ const Login = () => {
 
     if (Object.keys(newErrors).length === 0) {
       setIsLoading(true);
+      setErrors({});
+      const API_URL = `${import.meta.env.VITE_API_BASE_URL}/login`;
       try {
-        // AWS Cognito Sign In
-        const { isSignedIn, nextStep } = await signIn({
-          username: formData.email,
-          password: formData.password,
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: formData.email,
+            password: formData.password,
+          }),
         });
 
-        if (isSignedIn) {
-          // Login successful
-          console.log("Login successful!");
+        const responseData = await response.json();
 
-          // Get user attributes and groups
-          // const user = await getCurrentUser();
-          // const groups = user.signInUserSession.accessToken.payload["cognito:groups"];
+        // Check if response is not ok (HTTP error)
+        if (!response.ok) {
+          // Handle different response formats
+          let errorMessage = "Invalid email or password.";
 
-          // Store in localStorage
-          localStorage.setItem("userEmail", formData.email);
-          // localStorage.setItem("userGroups", JSON.stringify(groups));
+          if (responseData.body) {
+            // Lambda Proxy format: {statusCode, body: "stringified json"}
+            const errorBody = JSON.parse(responseData.body);
+            errorMessage = errorBody.message || errorMessage;
+          } else if (responseData.message) {
+            // Direct format: {message, ...}
+            errorMessage = responseData.message;
+          }
 
+          setErrors({ general: errorMessage });
+        } else {
+          // Login successful - handle different response formats
+          let loginResult;
+
+          if (responseData.body) {
+            // Lambda Proxy format: {statusCode: 200, body: "stringified json"}
+            loginResult = JSON.parse(responseData.body);
+          } else {
+            // Direct format: {message, access_token, ...}
+            loginResult = responseData;
+          }
+
+          // Parse ID token to get user info
+          const idTokenData = parseJwt(loginResult.id_token);
+          const userGroups = idTokenData["cognito:groups"] || [];
+
+          // Lấy user info từ response.user (có name từ DynamoDB)
+          const userInfo = loginResult.user || {};
+
+          // Store tokens and user info
+          localStorage.setItem("access_token", loginResult.access_token);
+          localStorage.setItem("id_token", loginResult.id_token);
+          localStorage.setItem("refresh_token", loginResult.refresh_token);
+          localStorage.setItem("userId", userInfo.userId || "");
+          localStorage.setItem(
+            "userEmail",
+            userInfo.email || idTokenData.email
+          );
+          localStorage.setItem("userName", userInfo.name || idTokenData.email);
+          localStorage.setItem("userRole", userInfo.role || "manager");
+          localStorage.setItem(
+            "userGroups",
+            JSON.stringify(userInfo.cognitoGroups || userGroups)
+          );
+          localStorage.setItem("isAuthenticated", "true");
+
+          console.log("Stored userName:", localStorage.getItem("userName"));
+          console.log("Login successful, redirecting to dashboard...");
           navigate("/dashboard");
-        } else if (nextStep.signInStep === "CONFIRM_SIGN_UP") {
-          setErrors({ general: "Please verify your email first" });
-        } else if (
-          nextStep.signInStep === "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED"
-        ) {
-          setErrors({ general: "Please change your temporary password" });
-          // TODO: Show change password form
         }
       } catch (error) {
         console.error("Login error:", error);
-
-        if (error.name === "UserNotFoundException") {
-          setErrors({ general: "User does not exist" });
-        } else if (error.name === "NotAuthorizedException") {
-          setErrors({ general: "Incorrect email or password" });
-        } else if (error.name === "UserNotConfirmedException") {
-          setErrors({ general: "Please verify your email first" });
-        } else {
-          setErrors({
-            general: error.message || "Login failed. Please try again.",
-          });
-        }
+        setErrors({
+          general: "Login failed. Please try again.",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -220,7 +262,7 @@ const Login = () => {
                   color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
                 }}
               >
-                Email / Username
+                Email
               </label>
               <input
                 type="text"
@@ -322,15 +364,16 @@ const Login = () => {
 
             {/* Forgot Password Link */}
             <div className="text-right">
-              <a
-                href="#"
-                className="text-sm font-medium transition-colors duration-300"
+              <button
+                type="button"
+                onClick={() => navigate("/forgot-password")}
+                className="text-sm font-medium transition-colors duration-300 hover:underline"
                 style={{
                   color: isDark ? "rgb(147, 197, 253)" : "rgb(37, 99, 235)",
                 }}
               >
                 Forgot Password?
-              </a>
+              </button>
             </div>
 
             {/* Submit Button */}
@@ -364,4 +407,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default LoginPage;

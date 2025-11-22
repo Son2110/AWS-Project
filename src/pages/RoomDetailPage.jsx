@@ -12,9 +12,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useTheme } from "../context/ThemeContext";
-import ThemeToggle from "./ThemeToggle";
+import ThemeToggle from "../components/layout/ThemeToggle";
 
-const RoomDetail = () => {
+const RoomDetailPage = () => {
   const navigate = useNavigate();
   const { roomId } = useParams();
   const { isDark } = useTheme();
@@ -625,4 +625,4 @@ const RoomDetail = () => {
   );
 };
 
-export default RoomDetail;
+export default RoomDetailPage;

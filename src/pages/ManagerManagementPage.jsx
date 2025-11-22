@@ -10,9 +10,9 @@ import {
   FaUser,
 } from "react-icons/fa";
 import { useTheme } from "../context/ThemeContext";
-import ThemeToggle from "./ThemeToggle";
+import ThemeToggle from "../components/layout/ThemeToggle";
 
-const ManagerManagement = () => {
+const ManagerManagementPage = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const [managers, setManagers] = useState([]);
@@ -747,4 +747,4 @@ const ManagerManagement = () => {
   );
 };
 
-export default ManagerManagement;
+export default ManagerManagementPage;

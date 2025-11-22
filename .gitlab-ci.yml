@@ -31,7 +31,11 @@ deploy_to_s3:
     # 💡 ĐÃ SỬA: Đổi từ ./build sang ./dist
     aws s3 sync ./dist s3://$S3_BUCKET_NAME --delete
 
+<<<<<<< HEAD
     echo "Trigger CloudFront Invalidation cho Distribution: $CLOUDFONT_DISTRIBUTION_ID..."
+=======
+    echo "Trigger CloudFront Invalidation cho Distribution: $CLOUDFRONT_DISTRIBUTION_ID..."
+>>>>>>> 02f07e6a21c91a0dc7ad2aaa506f602b41f3ed6d
     aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
   
   environment:
