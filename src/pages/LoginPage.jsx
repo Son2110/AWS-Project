@@ -3,7 +3,6 @@ import { FaEye, FaEyeSlash, FaMoon, FaSun } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 
-//helper
 const parseJwt = (token) => {
   try {
     return JSON.parse(atob(token.split(".")[1]));
@@ -29,7 +28,6 @@ const LoginPage = () => {
       ...prev,
       [name]: value,
     }));
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -78,41 +76,30 @@ const LoginPage = () => {
 
         const responseData = await response.json();
 
-        // Check if response is not ok (HTTP error)
         if (!response.ok) {
           // Handle different response formats
           let errorMessage = "Invalid email or password.";
 
           if (responseData.body) {
-            // Lambda Proxy format: {statusCode, body: "stringified json"}
             const errorBody = JSON.parse(responseData.body);
             errorMessage = errorBody.message || errorMessage;
           } else if (responseData.message) {
-            // Direct format: {message, ...}
             errorMessage = responseData.message;
           }
 
           setErrors({ general: errorMessage });
         } else {
-          // Login successful - handle different response formats
           let loginResult;
 
           if (responseData.body) {
-            // Lambda Proxy format: {statusCode: 200, body: "stringified json"}
             loginResult = JSON.parse(responseData.body);
           } else {
-            // Direct format: {message, access_token, ...}
             loginResult = responseData;
           }
 
-          // Parse ID token to get user info
           const idTokenData = parseJwt(loginResult.id_token);
           const userGroups = idTokenData["cognito:groups"] || [];
-
-          // Lấy user info từ response.user (có name từ DynamoDB)
           const userInfo = loginResult.user || {};
-
-          // Store tokens and user info
           localStorage.setItem("access_token", loginResult.access_token);
           localStorage.setItem("id_token", loginResult.id_token);
           localStorage.setItem("refresh_token", loginResult.refresh_token);
@@ -123,14 +110,13 @@ const LoginPage = () => {
           );
           localStorage.setItem("userName", userInfo.name || idTokenData.email);
           localStorage.setItem("userRole", userInfo.role || "manager");
+          localStorage.setItem("officeId", userInfo.officeId || "");
           localStorage.setItem(
             "userGroups",
             JSON.stringify(userInfo.cognitoGroups || userGroups)
           );
           localStorage.setItem("isAuthenticated", "true");
 
-          console.log("Stored userName:", localStorage.getItem("userName"));
-          console.log("Login successful, redirecting to dashboard...");
           navigate("/dashboard");
         }
       } catch (error) {
