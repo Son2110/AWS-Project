@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
 import ThemeToggle from "./ThemeToggle";
+import Toast from "../common/Toast";
 
 const Navbar = ({ userName = "User" }) => {
   const navigate = useNavigate();
@@ -22,9 +23,13 @@ const Navbar = ({ userName = "User" }) => {
     email: "",
   });
   const [errors, setErrors] = useState({});
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "success",
+  });
   const dropdownRef = useRef(null);
 
-  // Close dropdown khi click outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -35,7 +40,6 @@ const Navbar = ({ userName = "User" }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Load profile data khi mở modal
   useEffect(() => {
     if (showProfileModal) {
       setProfileData({
@@ -54,7 +58,6 @@ const Navbar = ({ userName = "User" }) => {
     e.preventDefault();
     setErrors({});
 
-    // Validation
     const newErrors = {};
     if (!profileData.name.trim()) {
       newErrors.name = "Name is required";
@@ -95,19 +98,29 @@ const Navbar = ({ userName = "User" }) => {
       const data = await response.json();
 
       if (response.ok) {
-        // Update localStorage
         localStorage.setItem("userName", profileData.name);
         localStorage.setItem("userEmail", profileData.email);
 
-        // Close modal and refresh page
         setShowProfileModal(false);
-        window.location.reload();
+        setToast({
+          show: true,
+          message: "Profile updated successfully",
+          type: "success",
+        });
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
         setErrors({ general: data.body || "Failed to update profile" });
       }
     } catch (error) {
       console.error("Update profile error:", error);
-      setErrors({ general: "Failed to update profile. Please try again." });
+      setToast({
+        show: true,
+        message: "Failed to update profile. Please try again.",
+        type: "error",
+      });
     } finally {
       setIsUpdating(false);
     }
@@ -135,7 +148,6 @@ const Navbar = ({ userName = "User" }) => {
       }
     }
 
-    // Xóa tất cả tokens khỏi localStorage
     localStorage.removeItem("access_token");
     localStorage.removeItem("id_token");
     localStorage.removeItem("refresh_token");
@@ -144,7 +156,6 @@ const Navbar = ({ userName = "User" }) => {
     localStorage.removeItem("userGroups");
     localStorage.removeItem("isAuthenticated");
 
-    // Điều hướng về login
     navigate("/");
   };
 
@@ -484,6 +495,15 @@ const Navbar = ({ userName = "User" }) => {
           </div>
         </div>
       )}
+
+      {/* Toast Notification */}
+      <Toast
+        show={toast.show}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, show: false })}
+        duration={3000}
+      />
     </header>
   );
 };

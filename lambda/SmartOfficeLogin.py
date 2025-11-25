@@ -122,26 +122,40 @@ def lambda_handler(event, context):
         
         try:
             existing_user = user_table.get_item(Key={'userId': user_id})
+            user_office_id = ''  # Default empty
             
             if 'Item' in existing_user:
-                # Update existing user - chỉ update email, name, role, lastLogin
+                # Get existing user data
+                existing_item = existing_user['Item']
+                
+                # Lấy danh sách offices (array) từ User table
+                user_offices = existing_item.get('offices', [])
+                
+                # Lấy primary officeId (nếu có, lấy office đầu tiên)
+                user_office_id = user_offices[0] if user_offices else ''
+                
+                print(f"DEBUG - User offices: {user_offices}, primary officeId: {user_office_id}")
+                
+                # GIỮ NGUYÊN name và email từ DynamoDB (đã được user/admin set)
+                # CHỈ update role (từ Cognito Groups) và lastLogin
                 user_table.update_item(
                     Key={'userId': user_id},
-                    UpdateExpression='SET #email = :email, #name = :name, #role = :role, updatedAt = :updated, lastLogin = :lastLogin',
+                    UpdateExpression='SET #role = :role, updatedAt = :updated, lastLogin = :lastLogin',
                     ExpressionAttributeNames={
-                        '#email': 'email',
-                        '#name': 'name',
                         '#role': 'role'
                     },
                     ExpressionAttributeValues={
-                        ':email': email,
-                        ':name': name,
                         ':role': role,
                         ':updated': current_time,
                         ':lastLogin': current_time
                     }
                 )
-                print(f"Updated user: {user_id}")
+                
+                # Lấy name và email từ DB để trả về (không dùng từ Cognito)
+                name = existing_item.get('name', name)
+                email = existing_item.get('email', email)
+                
+                print(f"Updated user: {user_id} (kept existing name and email)")
             else:
                 # Create new user với schema mới
                 user_table.put_item(Item={
@@ -150,18 +164,19 @@ def lambda_handler(event, context):
                     'name': name,
                     'email': email,
                     'role': role,
-                    'offices': [],  # Empty list, sẽ được assign sau
+                    'offices': [],  # Empty list, sẽ được assign sau bởi admin
                     'createdAt': current_time,
                     'updatedAt': current_time,
                     'lastLogin': current_time
                 })
+                user_office_id = ''  # User mới chưa có office
                 print(f"Created new user: {user_id}")
                 
         except Exception as db_error:
             # Log error nhưng không block login
             print(f"DynamoDB error: {str(db_error)}")
 
-        # Trả về tokens + user info
+        # Trả về tokens + user info (bao gồm officeId)
         return api_response(200, {
             'message': 'Login successful',
             'access_token': access_token,
@@ -172,6 +187,7 @@ def lambda_handler(event, context):
                 'email': email,
                 'name': name,
                 'role': role,
+                'officeId': user_office_id,  # Trả về officeId để frontend lưu localStorage
                 'cognitoGroups': cognito_groups  # Giữ lại để frontend tương thích
             }
         })

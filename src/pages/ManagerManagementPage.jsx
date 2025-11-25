@@ -11,6 +11,7 @@ import {
 } from "react-icons/fa";
 import { useTheme } from "../context/ThemeContext";
 import ThemeToggle from "../components/layout/ThemeToggle";
+import Toast from "../components/common/Toast";
 
 const ManagerManagementPage = () => {
   const navigate = useNavigate();
@@ -26,6 +27,11 @@ const ManagerManagementPage = () => {
     phone: "",
     role: "manager",
     status: "active",
+  });
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "success",
   });
 
   useEffect(() => {
@@ -121,7 +127,11 @@ const ManagerManagementPage = () => {
     if (window.confirm("Are you sure you want to delete this manager?")) {
       // TODO: Call API to delete
       setManagers(managers.filter((m) => m.id !== managerId));
-      alert("Manager deleted successfully!");
+      setToast({
+        show: true,
+        message: "Manager deleted successfully",
+        type: "success",
+      });
     }
   };
 
@@ -134,7 +144,11 @@ const ManagerManagementPage = () => {
           m.id === editingManager.id ? { ...m, ...formData } : m
         )
       );
-      alert("Manager updated successfully!");
+      setToast({
+        show: true,
+        message: "Manager updated successfully",
+        type: "success",
+      });
     } else {
       const newManager = {
         id: Date.now(),
@@ -143,7 +157,11 @@ const ManagerManagementPage = () => {
         lastLogin: "Never",
       };
       setManagers([...managers, newManager]);
-      alert("Manager added successfully!");
+      setToast({
+        show: true,
+        message: "Manager added successfully",
+        type: "success",
+      });
     }
     setShowAddModal(false);
   };
@@ -743,6 +761,15 @@ const ManagerManagementPage = () => {
           </div>
         </div>
       )}
+
+      {/* Toast Notification */}
+      <Toast
+        show={toast.show}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, show: false })}
+        duration={3000}
+      />
     </div>
   );
 };

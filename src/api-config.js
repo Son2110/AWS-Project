@@ -1,10 +1,13 @@
-// API Gateway Configuration
 const API_CONFIG = {
-  // TODO: Thay bằng Invoke URL của API Gateway (không có trailing slash)
-  BASE_URL: "https://abc123xyz.execute-api.ap-southeast-1.amazonaws.com/prod",
+  BASE_URL: import.meta.env.VITE_API_BASE_URL,
 
   ENDPOINTS: {
+    LOGIN: "/login",
+    LOGOUT: "/logout",
+    PROFILE_UPDATE: "/profile-update",
     ROOMS: "/rooms",
+    ROOM_CONFIG: "/room-config",
+    USER_OFFICE: "/user-office",
     LOGS: "/logs",
   },
 };

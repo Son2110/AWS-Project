@@ -31,6 +31,21 @@ ALLOWED_UPDATE_FIELDS = [
 ]
 
 def lambda_handler(event, context):
+    # CORS headers
+    headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+        'Access-Control-Allow-Methods': 'POST,OPTIONS'
+    }
+    
+    # Handle preflight OPTIONS request
+    if event.get('httpMethod') == 'OPTIONS':
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'body': ''
+        }
+    
     try:
         if "body" in event:
             body = json.loads(event["body"])
@@ -42,7 +57,11 @@ def lambda_handler(event, context):
         updates = body.get('updates')
 
         if not office_id or not room_id or not updates:
-            return {'statusCode': 400, 'body': 'Error: Missing "officeId", "roomId", or "updates"'}
+            return {
+                'statusCode': 400,
+                'headers': headers,
+                'body': json.dumps({'error': 'Missing \"officeId\", \"roomId\", or \"updates\"'})
+            }
 
         update_expression = "SET "
         expression_names = {}
@@ -60,7 +79,11 @@ def lambda_handler(event, context):
                 expression_values[placeholder_value] = value
 
         if not valid_updates:
-            return {'statusCode': 400, 'body': 'No valid field in "updates"'}
+            return {
+                'statusCode': 400,
+                'headers': headers,
+                'body': json.dumps({'error': 'No valid field in \"updates\"'})
+            }
 
         # Auto add lastUpdate field
         current_time_iso = datetime.now(timezone.utc).isoformat()
@@ -88,15 +111,21 @@ def lambda_handler(event, context):
         }
         return {
             'statusCode': 200,
+            'headers': headers,
             'body': json.dumps(success_body, cls=DecimalEncoder)
         }
 
     except Exception as e:
         print(f"Lỗi: {e}")
         if "ConditionalCheckFailedException" in str(e):
-             return {'statusCode': 404, 'body': 'No room found with given officeId and roomId'}
+            return {
+                'statusCode': 404,
+                'headers': headers,
+                'body': json.dumps({'error': 'No room found with given officeId and roomId'})
+            }
         
         return {
             'statusCode': 500,
-            'body': f'Error while handling: {str(e)}'
+            'headers': headers,
+            'body': json.dumps({'error': f'Error while handling: {str(e)}'})
         }

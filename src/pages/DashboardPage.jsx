@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaExclamationTriangle, FaUserShield, FaHistory } from "react-icons/fa";
-// TODO: Import Cognito functions when ready to integrate
-// import { getCurrentUser, signOut, fetchAuthSession } from "aws-amplify/auth";
 import { useTheme } from "../context/ThemeContext";
 import Navbar from "../components/layout/Navbar";
 import RoomCard from "../components/room/RoomCard";
@@ -24,12 +22,6 @@ const DashboardPage = () => {
 
   const checkAuthAndFetchData = async () => {
     try {
-      // TODO: Replace with Cognito authentication check
-      // const user = await getCurrentUser();
-      // const session = await fetchAuthSession();
-      // const groups = session.tokens?.accessToken?.payload["cognito:groups"] || [];
-
-      // Check authentication from localStorage
       const isAuthenticated = localStorage.getItem("isAuthenticated");
       if (!isAuthenticated) {
         navigate("/");
@@ -40,14 +32,9 @@ const DashboardPage = () => {
       const userEmail = localStorage.getItem("userEmail") || "";
       const groups = JSON.parse(localStorage.getItem("userGroups") || "[]");
 
-      setUserName(userName); // Hiển thị name từ DynamoDB
+      setUserName(userName);
       setUserGroups(groups);
       setIsAdmin(groups.includes("Admin"));
-
-      console.log("User authenticated:", userName);
-      console.log("User groups:", groups);
-
-      // Fetch dashboard data
       await fetchDashboardData();
     } catch (error) {
       console.error("Authentication error:", error);
@@ -59,13 +46,16 @@ const DashboardPage = () => {
     try {
       setIsLoading(true);
 
-      // TODO: Replace with real API Gateway call with Cognito JWT token
-      const response = await apiService.getRooms();
+      const officeId = localStorage.getItem("officeId");
 
-      console.log("API Response:", response);
+      if (!officeId) {
+        setRooms([]);
+        setIsLoading(false);
+        return;
+      }
 
-      // Parse rooms data (fallback to mock if API fails)
-      const rooms = response.rooms || response || [];
+      const roomsData = await apiService.getRoomsByOffice(officeId);
+      const rooms = roomsData.rooms || [];
 
       // Generate alerts based on temperature
       const alerts = [];
@@ -88,7 +78,6 @@ const DashboardPage = () => {
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
 
-      // Use fallback mock data if API fails
       const mockRooms = [
         {
           id: "room-1",
@@ -260,7 +249,15 @@ const DashboardPage = () => {
           /* Room Cards Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {rooms.map((room) => (
-              <RoomCard key={room.id} room={room} onClick={handleRoomClick} />
+              <RoomCard
+                key={room.roomId || room.id}
+                room={{
+                  ...room,
+                  id: room.roomId || room.id,
+                  name: room.roomId || room.name || "Unknown Room",
+                }}
+                onClick={handleRoomClick}
+              />
             ))}
           </div>
         )}

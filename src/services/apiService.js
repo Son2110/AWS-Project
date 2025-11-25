@@ -1,30 +1,10 @@
-// TODO: Import AWS Amplify when ready for Cognito integration
-// import { fetchAuthSession } from "aws-amplify/auth";
 import API_CONFIG from "../api-config";
 
-/**
- * Simple API Service for Smart Office
- * Currently uses mock data - TODO: integrate with API Gateway + Cognito JWT tokens
- */
 const apiService = {
-  /**
-   * TODO: Get Authorization header with JWT token from Cognito
-   * Currently returns basic headers for mock API calls
-   */
   getAuthHeader: async () => {
     try {
-      // TODO: Replace with Cognito session
-      // const session = await fetchAuthSession();
-      // const token = session.tokens?.idToken?.toString();
-      // return {
-      //   Authorization: token,
-      //   "Content-Type": "application/json",
-      // };
-
-      // Mock headers for development
       return {
         "Content-Type": "application/json",
-        // TODO: Add Authorization header when Cognito is integrated
       };
     } catch (error) {
       console.error("Error getting auth token:", error);
@@ -32,27 +12,58 @@ const apiService = {
     }
   },
 
-  /**
-   * Get all rooms from API Gateway
-   * TODO: Replace mock data with real API Gateway call
-   */
+  getUserOffice: async (userId) => {
+    try {
+      const idToken = localStorage.getItem("idToken");
+      const response = await fetch(
+        `${API_CONFIG.BASE_URL}/user-office?userId=${userId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching user office:", error);
+      throw error;
+    }
+  },
+
+  getRoomsByOffice: async (officeId) => {
+    try {
+      const idToken = localStorage.getItem("idToken");
+      const response = await fetch(
+        `${API_CONFIG.BASE_URL}/rooms?officeId=${officeId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching rooms by office:", error);
+      throw error;
+    }
+  },
+
   getRooms: async () => {
     try {
-      // TODO: Uncomment when API Gateway is ready
-      // const headers = await apiService.getAuthHeader();
-      // const response = await fetch(
-      //   `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ROOMS}`,
-      //   {
-      //     method: "GET",
-      //     headers,
-      //   }
-      // );
-      // if (!response.ok) {
-      //   throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      // }
-      // return await response.json();
-
-      // Mock data for development
       return new Promise((resolve) => {
         setTimeout(() => {
           resolve([
@@ -93,7 +104,7 @@ const apiService = {
               status: "occupied",
             },
           ]);
-        }, 500); // Simulate API delay
+        }, 500);
       });
     } catch (error) {
       console.error("Error fetching rooms:", error);
@@ -101,27 +112,8 @@ const apiService = {
     }
   },
 
-  /**
-   * Get activity logs from API Gateway
-   * TODO: Replace mock data with real API Gateway call
-   */
   getLogs: async () => {
     try {
-      // TODO: Uncomment when API Gateway is ready
-      // const headers = await apiService.getAuthHeader();
-      // const response = await fetch(
-      //   `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.LOGS}`,
-      //   {
-      //     method: "GET",
-      //     headers,
-      //   }
-      // );
-      // if (!response.ok) {
-      //   throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      // }
-      // return await response.json();
-
-      // Mock logs data for development
       return new Promise((resolve) => {
         setTimeout(() => {
           resolve([
