@@ -123,6 +123,7 @@ def lambda_handler(event, context):
         try:
             existing_user = user_table.get_item(Key={'userId': user_id})
             user_office_id = ''  # Default empty
+            user_company_id = ''  # Default empty
             
             if 'Item' in existing_user:
                 # Get existing user data
@@ -134,7 +135,10 @@ def lambda_handler(event, context):
                 # Lấy primary officeId (nếu có, lấy office đầu tiên)
                 user_office_id = user_offices[0] if user_offices else ''
                 
-                print(f"DEBUG - User offices: {user_offices}, primary officeId: {user_office_id}")
+                # Lấy companyId từ User table
+                user_company_id = existing_item.get('companyId', '')
+                
+                print(f"DEBUG - User offices: {user_offices}, primary officeId: {user_office_id}, companyId: {user_company_id}")
                 
                 # GIỮ NGUYÊN name và email từ DynamoDB (đã được user/admin set)
                 # CHỈ update role (từ Cognito Groups) và lastLogin
@@ -176,7 +180,7 @@ def lambda_handler(event, context):
             # Log error nhưng không block login
             print(f"DynamoDB error: {str(db_error)}")
 
-        # Trả về tokens + user info (bao gồm officeId)
+        # Trả về tokens + user info (bao gồm officeId và companyId)
         return api_response(200, {
             'message': 'Login successful',
             'access_token': access_token,
@@ -188,6 +192,7 @@ def lambda_handler(event, context):
                 'name': name,
                 'role': role,
                 'officeId': user_office_id,  # Trả về officeId để frontend lưu localStorage
+                'companyId': user_company_id,  # Trả về companyId để frontend lưu localStorage
                 'cognitoGroups': cognito_groups  # Giữ lại để frontend tương thích
             }
         })

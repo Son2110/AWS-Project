@@ -111,6 +111,7 @@ const LoginPage = () => {
           localStorage.setItem("userName", userInfo.name || idTokenData.email);
           localStorage.setItem("userRole", userInfo.role || "manager");
           localStorage.setItem("officeId", userInfo.officeId || "");
+          localStorage.setItem("companyId", userInfo.companyId || "");
           localStorage.setItem(
             "userGroups",
             JSON.stringify(userInfo.cognitoGroups || userGroups)

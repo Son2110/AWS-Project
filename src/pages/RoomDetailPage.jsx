@@ -14,6 +14,7 @@ import {
 import { useTheme } from "../context/ThemeContext";
 import ThemeToggle from "../components/layout/ThemeToggle";
 import Toast from "../components/common/Toast";
+import apiService from "../services/apiService";
 
 const RoomDetailPage = () => {
   const navigate = useNavigate();
@@ -52,45 +53,27 @@ const RoomDetailPage = () => {
       setIsLoading(true);
 
       const officeId = localStorage.getItem("officeId");
-      const idToken = localStorage.getItem("id_token");
-      const API_URL = `${
-        import.meta.env.VITE_API_BASE_URL
-      }/room-config?officeId=${officeId}&roomId=${roomId}`;
+      const data = await apiService.getRoomConfig(officeId, roomId);
 
-      const response = await fetch(API_URL, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
+      setConfigData({
+        temperatureMode: data.temperatureMode || "auto",
+        humidityMode: data.humidityMode || "auto",
+        lightMode: data.lightMode || "auto",
+        targetTemperature: data.targetTemperature || 26,
+        targetHumidity: data.targetHumidity || 60,
+        targetLight: data.targetLight || 300,
+        autoOnTime: data.autoOnTime || "08:00",
+        autoOffTime: data.autoOffTime || "17:00",
       });
 
-      if (response.ok) {
-        const data = await response.json();
-
-        setConfigData({
-          temperatureMode: data.temperatureMode || "auto",
-          humidityMode: data.humidityMode || "auto",
-          lightMode: data.lightMode || "auto",
-          targetTemperature: data.targetTemperature || 26,
-          targetHumidity: data.targetHumidity || 60,
-          targetLight: data.targetLight || 300,
-          autoOnTime: data.autoOnTime || "08:00",
-          autoOffTime: data.autoOffTime || "17:00",
-        });
-
-        setRoomData({
-          id: roomId,
-          name: `Room ${roomId}`,
-          currentTemp: 25,
-          currentHumidity: 60,
-          currentLight: 450,
-          lastUpdate: data.lastUpdate,
-        });
-      } else {
-        console.error("❌ Failed to fetch room config:", response.status);
-        setDefaultRoomData();
-      }
+      setRoomData({
+        id: roomId,
+        name: `Room ${roomId}`,
+        currentTemp: 25,
+        currentHumidity: 60,
+        currentLight: 450,
+        lastUpdate: data.lastUpdate,
+      });
 
       const mockChartData = Array.from({ length: 24 }, (_, i) => ({
         time: `${i}:00`,
@@ -141,53 +124,28 @@ const RoomDetailPage = () => {
     try {
       setIsSaving(true);
 
-      const API_URL = `${import.meta.env.VITE_API_BASE_URL}/room-config`;
-      const idToken = localStorage.getItem("id_token");
       const officeId = localStorage.getItem("officeId");
 
-      const payload = {
-        officeId: officeId,
-        roomId: roomId,
-        updates: {
-          temperatureMode: configData.temperatureMode,
-          humidityMode: configData.humidityMode,
-          lightMode: configData.lightMode,
-          targetTemperature: configData.targetTemperature,
-          targetHumidity: configData.targetHumidity,
-          targetLight: configData.targetLight,
-          autoOnTime: configData.autoOnTime,
-          autoOffTime: configData.autoOffTime,
-        },
+      const updates = {
+        temperatureMode: configData.temperatureMode,
+        humidityMode: configData.humidityMode,
+        lightMode: configData.lightMode,
+        targetTemperature: configData.targetTemperature,
+        targetHumidity: configData.targetHumidity,
+        targetLight: configData.targetLight,
+        autoOnTime: configData.autoOnTime,
+        autoOffTime: configData.autoOffTime,
       };
 
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      await apiService.saveRoomConfig(officeId, roomId, updates);
 
-      if (response.ok) {
-        const data = await response.json();
-        setShowConfirmModal(false);
-        setToast({
-          show: true,
-          message: "Settings saved successfully",
-          type: "success",
-        });
-        fetchRoomData();
-      } else {
-        const errorData = await response.json();
-        console.error("❌ Failed to save settings:", errorData);
-        setToast({
-          show: true,
-          message:
-            errorData.error || errorData.message || "Failed to save settings",
-          type: "error",
-        });
-      }
+      setShowConfirmModal(false);
+      setToast({
+        show: true,
+        message: "Settings saved successfully",
+        type: "success",
+      });
+      fetchRoomData();
     } catch (error) {
       console.error("Error saving settings:", error);
       setToast({

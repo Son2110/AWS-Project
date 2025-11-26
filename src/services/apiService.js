@@ -1,5 +1,3 @@
-import API_CONFIG from "../api-config";
-
 const apiService = {
   getAuthHeader: async () => {
     try {
@@ -14,9 +12,9 @@ const apiService = {
 
   getUserOffice: async (userId) => {
     try {
-      const idToken = localStorage.getItem("idToken");
+      const idToken = localStorage.getItem("id_token");
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/user-office?userId=${userId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/user-office?userId=${userId}`,
         {
           method: "GET",
           headers: {
@@ -39,9 +37,9 @@ const apiService = {
 
   getRoomsByOffice: async (officeId) => {
     try {
-      const idToken = localStorage.getItem("idToken");
+      const idToken = localStorage.getItem("id_token");
       const response = await fetch(
-        `${API_CONFIG.BASE_URL}/rooms?officeId=${officeId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/rooms?officeId=${officeId}`,
         {
           method: "GET",
           headers: {
@@ -62,82 +60,145 @@ const apiService = {
     }
   },
 
-  getRooms: async () => {
+  getUsers: async (companyId) => {
     try {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve([
-            {
-              id: "room-1",
-              name: "Meeting Room A",
-              temperature: 22,
-              humidity: 45,
-              occupancy: 4,
-              maxOccupancy: 8,
-              status: "occupied",
-            },
-            {
-              id: "room-2",
-              name: "Meeting Room B",
-              temperature: 24,
-              humidity: 40,
-              occupancy: 0,
-              maxOccupancy: 6,
-              status: "available",
-            },
-            {
-              id: "room-3",
-              name: "Server Room",
-              temperature: 32,
-              humidity: 35,
-              occupancy: 1,
-              maxOccupancy: 2,
-              status: "maintenance",
-            },
-            {
-              id: "room-4",
-              name: "Office 1",
-              temperature: 23,
-              humidity: 42,
-              occupancy: 2,
-              maxOccupancy: 4,
-              status: "occupied",
-            },
-          ]);
-        }, 500);
-      });
+      const idToken = localStorage.getItem("id_token");
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/user-list?companyId=${companyId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
     } catch (error) {
-      console.error("Error fetching rooms:", error);
+      console.error("Error fetching users:", error);
       throw error;
     }
   },
 
-  getLogs: async () => {
+  getRoomConfig: async (officeId, roomId) => {
     try {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve([
-            {
-              id: 1,
-              timestamp: new Date().toISOString(),
-              user: "Admin User",
-              action: "Login",
-              details: "User logged in successfully",
-              ip: "192.168.1.100",
-            },
-            {
-              id: 2,
-              timestamp: new Date(Date.now() - 300000).toISOString(),
-              user: "Regular User",
-              action: "Room Access",
-              details: "Accessed Meeting Room A",
-              ip: "192.168.1.101",
-            },
-          ]);
-        }, 300);
-      });
+      const idToken = localStorage.getItem("id_token");
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_BASE_URL
+        }/room-config?officeId=${officeId}&roomId=${roomId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
     } catch (error) {
-      console.error("Error fetching logs:", error);
+      console.error("Error fetching room config:", error);
+      throw error;
+    }
+  },
+
+  saveRoomConfig: async (officeId, roomId, updates) => {
+    try {
+      const idToken = localStorage.getItem("id_token");
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/room-config`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            officeId,
+            roomId,
+            updates,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || errorData.message || "Failed to save room config"
+        );
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error saving room config:", error);
+      throw error;
+    }
+  },
+
+  updateUserProfile: async (userId, updates) => {
+    try {
+      const idToken = localStorage.getItem("id_token");
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/profile-update`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            userId,
+            updates,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.body || "Failed to update profile");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      throw error;
+    }
+  },
+
+  logout: async (accessToken) => {
+    try {
+      const idToken = localStorage.getItem("id_token");
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/logout`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            access_token: accessToken,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Logout failed");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error during logout:", error);
       throw error;
     }
   },

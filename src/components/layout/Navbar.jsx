@@ -10,6 +10,7 @@ import {
 import { useTheme } from "../../context/ThemeContext";
 import ThemeToggle from "./ThemeToggle";
 import Toast from "../common/Toast";
+import apiService from "../../services/apiService";
 
 const Navbar = ({ userName = "User" }) => {
   const navigate = useNavigate();
@@ -77,43 +78,25 @@ const Navbar = ({ userName = "User" }) => {
 
     try {
       const userId = localStorage.getItem("userId");
-      const idToken = localStorage.getItem("id_token");
-      const API_URL = `${import.meta.env.VITE_API_BASE_URL}/profile-update`;
 
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          userId: userId,
-          updates: {
-            name: profileData.name,
-            email: profileData.email,
-          },
-        }),
+      await apiService.updateUserProfile(userId, {
+        name: profileData.name,
+        email: profileData.email,
       });
 
-      const data = await response.json();
+      localStorage.setItem("userName", profileData.name);
+      localStorage.setItem("userEmail", profileData.email);
 
-      if (response.ok) {
-        localStorage.setItem("userName", profileData.name);
-        localStorage.setItem("userEmail", profileData.email);
+      setShowProfileModal(false);
+      setToast({
+        show: true,
+        message: "Profile updated successfully",
+        type: "success",
+      });
 
-        setShowProfileModal(false);
-        setToast({
-          show: true,
-          message: "Profile updated successfully",
-          type: "success",
-        });
-
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
-      } else {
-        setErrors({ general: data.body || "Failed to update profile" });
-      }
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } catch (error) {
       console.error("Update profile error:", error);
       setToast({
@@ -127,22 +110,11 @@ const Navbar = ({ userName = "User" }) => {
   };
 
   const handleLogout = async () => {
-    const idToken = localStorage.getItem("id_token");
     const accessToken = localStorage.getItem("access_token");
-    const API_URL = `${import.meta.env.VITE_API_BASE_URL}/logout`;
 
-    if (idToken && accessToken) {
+    if (accessToken) {
       try {
-        await fetch(API_URL, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            access_token: accessToken,
-          }),
-        });
+        await apiService.logout(accessToken);
       } catch (error) {
         console.error("Logout API call failed:", error);
       }

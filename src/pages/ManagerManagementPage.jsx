@@ -12,6 +12,7 @@ import {
 import { useTheme } from "../context/ThemeContext";
 import ThemeToggle from "../components/layout/ThemeToggle";
 import Toast from "../components/common/Toast";
+import apiService from "../services/apiService";
 
 const ManagerManagementPage = () => {
   const navigate = useNavigate();
@@ -41,59 +42,24 @@ const ManagerManagementPage = () => {
   const fetchManagers = async () => {
     try {
       setIsLoading(true);
-      // TODO: Call API Gateway - GET /api/admin/managers
-      // const response = await fetch(`${API_ENDPOINT}/api/admin/managers`);
-      // const data = await response.json();
+      const companyId = localStorage.getItem("companyId");
 
-      // Mock data
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      if (!companyId) {
+        console.error("No companyId found in localStorage");
+        setManagers([]);
+        return;
+      }
 
-      const mockManagers = [
-        {
-          id: 1,
-          name: "Hoang Son",
-          email: "son@company.com",
-          phone: "+84 901 234 567",
-          role: "admin",
-          status: "active",
-          joinDate: "2024-01-15",
-          lastLogin: "2025-11-03 09:30",
-        },
-        {
-          id: 2,
-          name: "Nguyen Van A",
-          email: "vana@company.com",
-          phone: "+84 902 345 678",
-          role: "manager",
-          status: "active",
-          joinDate: "2024-03-20",
-          lastLogin: "2025-11-02 16:45",
-        },
-        {
-          id: 3,
-          name: "Tran Thi B",
-          email: "thib@company.com",
-          phone: "+84 903 456 789",
-          role: "manager",
-          status: "active",
-          joinDate: "2024-05-10",
-          lastLogin: "2025-11-03 08:15",
-        },
-        {
-          id: 4,
-          name: "Le Van C",
-          email: "vanc@company.com",
-          phone: "+84 904 567 890",
-          role: "manager",
-          status: "inactive",
-          joinDate: "2024-02-28",
-          lastLogin: "2025-10-20 14:20",
-        },
-      ];
-
-      setManagers(mockManagers);
+      const data = await apiService.getUsers(companyId);
+      setManagers(data.users || []);
     } catch (error) {
       console.error("Error fetching managers:", error);
+      setToast({
+        show: true,
+        message: "Failed to load users",
+        type: "error",
+      });
+      setManagers([]);
     } finally {
       setIsLoading(false);
     }
@@ -322,27 +288,7 @@ const ManagerManagementPage = () => {
                           : "rgb(55, 65, 81)",
                       }}
                     >
-                      Phone
-                    </th>
-                    <th
-                      className="px-6 py-4 text-left text-sm font-semibold"
-                      style={{
-                        color: isDark
-                          ? "rgb(209, 213, 219)"
-                          : "rgb(55, 65, 81)",
-                      }}
-                    >
                       Role
-                    </th>
-                    <th
-                      className="px-6 py-4 text-left text-sm font-semibold"
-                      style={{
-                        color: isDark
-                          ? "rgb(209, 213, 219)"
-                          : "rgb(55, 65, 81)",
-                      }}
-                    >
-                      Status
                     </th>
                     <th
                       className="px-6 py-4 text-left text-sm font-semibold"
@@ -369,7 +315,7 @@ const ManagerManagementPage = () => {
                 <tbody>
                   {filteredManagers.map((manager, index) => (
                     <tr
-                      key={manager.id}
+                      key={manager.userId || manager.id}
                       className="border-t transition-colors duration-200 hover:bg-opacity-50"
                       style={{
                         borderColor: isDark
@@ -446,16 +392,6 @@ const ManagerManagementPage = () => {
                       >
                         {manager.email}
                       </td>
-                      <td
-                        className="px-6 py-4"
-                        style={{
-                          color: isDark
-                            ? "rgb(209, 213, 219)"
-                            : "rgb(75, 85, 99)",
-                        }}
-                      >
-                        {manager.phone}
-                      </td>
                       <td className="px-6 py-4">
                         <span
                           className="px-3 py-1 rounded-full text-sm font-semibold"
@@ -478,32 +414,7 @@ const ManagerManagementPage = () => {
                                 : "rgb(37, 99, 235)",
                           }}
                         >
-                          {manager.role.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className="px-3 py-1 rounded-full text-sm font-semibold"
-                          style={{
-                            backgroundColor:
-                              manager.status === "active"
-                                ? isDark
-                                  ? "rgba(34, 197, 94, 0.2)"
-                                  : "rgb(220, 252, 231)"
-                                : isDark
-                                ? "rgba(156, 163, 175, 0.2)"
-                                : "rgb(243, 244, 246)",
-                            color:
-                              manager.status === "active"
-                                ? isDark
-                                  ? "rgb(134, 239, 172)"
-                                  : "rgb(21, 128, 61)"
-                                : isDark
-                                ? "rgb(156, 163, 175)"
-                                : "rgb(107, 114, 128)",
-                          }}
-                        >
-                          {manager.status.toUpperCase()}
+                          {(manager.role || "manager").toUpperCase()}
                         </span>
                       </td>
                       <td
@@ -514,7 +425,7 @@ const ManagerManagementPage = () => {
                             : "rgb(107, 114, 128)",
                         }}
                       >
-                        {manager.lastLogin}
+                        {manager.lastLogin || "Never"}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex justify-center gap-2">
