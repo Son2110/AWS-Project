@@ -10,6 +10,8 @@ import {
   FaSnowflake,
   FaCog,
   FaUser,
+  FaCalendarAlt,
+  FaSearch
 } from "react-icons/fa";
 import { useTheme } from "../context/ThemeContext";
 import ThemeToggle from "../components/layout/ThemeToggle";
@@ -244,12 +246,12 @@ const ActivityLogsPage = () => {
 
   const getActionColor = (action) => {
     if (action.includes("alert") || action.includes("threshold"))
-      return { bg: "rgb(254, 226, 226)", text: "rgb(220, 38, 38)" };
+      return { bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-600 dark:text-red-400" };
     if (action.includes("turned_on"))
-      return { bg: "rgb(220, 252, 231)", text: "rgb(21, 128, 61)" };
+      return { bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-600 dark:text-green-400" };
     if (action.includes("turned_off"))
-      return { bg: "rgb(243, 244, 246)", text: "rgb(107, 114, 128)" };
-    return { bg: "rgb(219, 234, 254)", text: "rgb(37, 99, 235)" };
+      return { bg: "bg-slate-100 dark:bg-slate-700", text: "text-slate-600 dark:text-slate-400" };
+    return { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-600 dark:text-blue-400" };
   };
 
   const rooms = [...new Set(logs.map((log) => log.room))];
@@ -257,54 +259,35 @@ const ActivityLogsPage = () => {
   const actions = [...new Set(logs.map((log) => log.action))];
 
   return (
-    <div
-      className="min-h-screen transition-colors duration-300"
-      style={{
-        backgroundColor: isDark ? "rgb(17, 24, 39)" : "rgb(243, 244, 246)",
-      }}
-    >
+    <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
+      {/* Background Elements */}
+      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div className={`absolute top-[20%] right-[20%] w-[40%] h-[40%] rounded-full blur-3xl opacity-10 ${isDark ? 'bg-indigo-900' : 'bg-indigo-200'}`}></div>
+        <div className={`absolute bottom-[10%] left-[10%] w-[30%] h-[30%] rounded-full blur-3xl opacity-10 ${isDark ? 'bg-blue-900' : 'bg-blue-200'}`}></div>
+      </div>
+
       {/* Header */}
-      <header
-        className="shadow-md transition-colors duration-300"
-        style={{
-          backgroundColor: isDark ? "rgb(31, 41, 55)" : "rgb(255, 255, 255)",
-        }}
-      >
+      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors duration-300 ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate("/dashboard")}
-              className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-              style={{
-                color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-              }}
+              className={`p-2 rounded-xl transition-colors ${isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
             >
               <FaArrowLeft className="text-xl" />
             </button>
             <div className="flex items-center gap-3">
-              <div
-                className="p-2 rounded-lg transition-colors duration-300"
-                style={{
-                  backgroundColor: isDark
-                    ? "rgb(30, 58, 138)"
-                    : "rgb(219, 234, 254)",
-                }}
-              >
-                <FaHistory
-                  className="w-8 h-8 transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(147, 197, 253)" : "rgb(37, 99, 235)",
-                  }}
-                />
+              <div className={`p-2.5 rounded-xl ${isDark ? 'bg-indigo-900/30 text-indigo-400' : 'bg-indigo-100 text-indigo-600'}`}>
+                <FaHistory className="w-6 h-6" />
               </div>
-              <h1
-                className="text-2xl font-bold transition-colors duration-300"
-                style={{
-                  color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                }}
-              >
-                Activity Logs
-              </h1>
+              <div>
+                <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    Activity Logs
+                </h1>
+                <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Track system events and user actions
+                </p>
+              </div>
             </div>
           </div>
           <ThemeToggle />
@@ -312,470 +295,227 @@ const ActivityLogsPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 relative z-10">
         {/* Filters Section */}
-        <div
-          className="rounded-xl shadow-lg p-6 mb-6 transition-colors duration-300"
-          style={{
-            backgroundColor: isDark ? "rgb(31, 41, 55)" : "rgb(255, 255, 255)",
-          }}
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <FaFilter
-              style={{
-                color: isDark ? "rgb(147, 197, 253)" : "rgb(37, 99, 235)",
-              }}
-            />
-            <h2
-              className="text-lg font-semibold"
-              style={{
-                color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-              }}
-            >
-              Filters
+        <div className={`rounded-3xl shadow-lg p-6 mb-8 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+          <div className="flex items-center gap-3 mb-6">
+            <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-700 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+                <FaFilter />
+            </div>
+            <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              Filter Logs
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Room Filter */}
             <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{
-                  color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                }}
-              >
+              <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Room
               </label>
-              <select
-                value={filters.room}
-                onChange={(e) =>
-                  setFilters({ ...filters, room: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-lg border-2 transition-colors duration-300"
-                style={{
-                  backgroundColor: isDark
-                    ? "rgb(55, 65, 81)"
-                    : "rgb(249, 250, 251)",
-                  borderColor: isDark
-                    ? "rgb(75, 85, 99)"
-                    : "rgb(209, 213, 219)",
-                  color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                }}
-              >
-                <option value="all">All Rooms</option>
-                {rooms.map((room) => (
-                  <option key={room} value={room}>
-                    {room}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                    value={filters.room}
+                    onChange={(e) => setFilters({ ...filters, room: e.target.value })}
+                    className={`w-full px-4 py-2.5 rounded-xl border-2 outline-none appearance-none transition-all ${
+                        isDark 
+                            ? 'bg-slate-900/50 border-slate-700 focus:border-indigo-500 text-white' 
+                            : 'bg-slate-50 border-slate-200 focus:border-indigo-500 text-slate-900'
+                    }`}
+                >
+                    <option value="all">All Rooms</option>
+                    {rooms.map((room) => (
+                    <option key={room} value={room}>{room}</option>
+                    ))}
+                </select>
+                <FaSearch className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs pointer-events-none ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+              </div>
             </div>
 
             {/* Action Filter */}
             <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{
-                  color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                }}
-              >
+              <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Action
               </label>
-              <select
-                value={filters.action}
-                onChange={(e) =>
-                  setFilters({ ...filters, action: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-lg border-2 transition-colors duration-300"
-                style={{
-                  backgroundColor: isDark
-                    ? "rgb(55, 65, 81)"
-                    : "rgb(249, 250, 251)",
-                  borderColor: isDark
-                    ? "rgb(75, 85, 99)"
-                    : "rgb(209, 213, 219)",
-                  color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                }}
-              >
-                <option value="all">All Actions</option>
-                {actions.map((action) => (
-                  <option key={action} value={action}>
-                    {action.replace(/_/g, " ").toUpperCase()}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                    value={filters.action}
+                    onChange={(e) => setFilters({ ...filters, action: e.target.value })}
+                    className={`w-full px-4 py-2.5 rounded-xl border-2 outline-none appearance-none transition-all ${
+                        isDark 
+                            ? 'bg-slate-900/50 border-slate-700 focus:border-indigo-500 text-white' 
+                            : 'bg-slate-50 border-slate-200 focus:border-indigo-500 text-slate-900'
+                    }`}
+                >
+                    <option value="all">All Actions</option>
+                    {actions.map((action) => (
+                    <option key={action} value={action}>{action.replace(/_/g, " ").toUpperCase()}</option>
+                    ))}
+                </select>
+                <FaCog className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs pointer-events-none ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+              </div>
             </div>
 
             {/* User Filter */}
             <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{
-                  color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                }}
-              >
+              <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 User
               </label>
-              <select
-                value={filters.user}
-                onChange={(e) =>
-                  setFilters({ ...filters, user: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-lg border-2 transition-colors duration-300"
-                style={{
-                  backgroundColor: isDark
-                    ? "rgb(55, 65, 81)"
-                    : "rgb(249, 250, 251)",
-                  borderColor: isDark
-                    ? "rgb(75, 85, 99)"
-                    : "rgb(209, 213, 219)",
-                  color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                }}
-              >
-                <option value="all">All Users</option>
-                {users.map((user) => (
-                  <option key={user} value={user}>
-                    {user}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                    value={filters.user}
+                    onChange={(e) => setFilters({ ...filters, user: e.target.value })}
+                    className={`w-full px-4 py-2.5 rounded-xl border-2 outline-none appearance-none transition-all ${
+                        isDark 
+                            ? 'bg-slate-900/50 border-slate-700 focus:border-indigo-500 text-white' 
+                            : 'bg-slate-50 border-slate-200 focus:border-indigo-500 text-slate-900'
+                    }`}
+                >
+                    <option value="all">All Users</option>
+                    {users.map((user) => (
+                    <option key={user} value={user}>{user}</option>
+                    ))}
+                </select>
+                <FaUser className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs pointer-events-none ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+              </div>
             </div>
 
             {/* Date From */}
             <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{
-                  color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                }}
-              >
+              <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 From Date
               </label>
-              <input
-                type="date"
-                value={filters.dateFrom}
-                onChange={(e) =>
-                  setFilters({ ...filters, dateFrom: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-lg border-2 transition-colors duration-300"
-                style={{
-                  backgroundColor: isDark
-                    ? "rgb(55, 65, 81)"
-                    : "rgb(249, 250, 251)",
-                  borderColor: isDark
-                    ? "rgb(75, 85, 99)"
-                    : "rgb(209, 213, 219)",
-                  color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                }}
-              />
+              <div className="relative">
+                <input
+                    type="date"
+                    value={filters.dateFrom}
+                    onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+                    className={`w-full px-4 py-2.5 rounded-xl border-2 outline-none transition-all ${
+                        isDark 
+                            ? 'bg-slate-900/50 border-slate-700 focus:border-indigo-500 text-white' 
+                            : 'bg-slate-50 border-slate-200 focus:border-indigo-500 text-slate-900'
+                    }`}
+                />
+                <FaCalendarAlt className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs pointer-events-none ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+              </div>
             </div>
 
             {/* Date To */}
             <div>
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{
-                  color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                }}
-              >
+              <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 To Date
               </label>
-              <input
-                type="date"
-                value={filters.dateTo}
-                onChange={(e) =>
-                  setFilters({ ...filters, dateTo: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-lg border-2 transition-colors duration-300"
-                style={{
-                  backgroundColor: isDark
-                    ? "rgb(55, 65, 81)"
-                    : "rgb(249, 250, 251)",
-                  borderColor: isDark
-                    ? "rgb(75, 85, 99)"
-                    : "rgb(209, 213, 219)",
-                  color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                }}
-              />
+              <div className="relative">
+                <input
+                    type="date"
+                    value={filters.dateTo}
+                    onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+                    className={`w-full px-4 py-2.5 rounded-xl border-2 outline-none transition-all ${
+                        isDark 
+                            ? 'bg-slate-900/50 border-slate-700 focus:border-indigo-500 text-white' 
+                            : 'bg-slate-50 border-slate-200 focus:border-indigo-500 text-slate-900'
+                    }`}
+                />
+                <FaCalendarAlt className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs pointer-events-none ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+              </div>
             </div>
           </div>
 
           {/* Export Button */}
-          <div className="mt-4 flex justify-end">
+          <div className={`mt-6 pt-6 border-t flex justify-end ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
             <button
               onClick={handleExportCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
+              className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all font-semibold shadow-lg shadow-green-500/30 hover:shadow-green-500/50 hover:-translate-y-0.5"
             >
               <FaDownload />
-              <span>Export to CSV</span>
+              <span>Export CSV</span>
             </button>
           </div>
         </div>
 
         {/* Results Info */}
-        <div className="mb-4">
-          <p
-            className="text-sm"
-            style={{
-              color: isDark ? "rgb(156, 163, 175)" : "rgb(107, 114, 128)",
-            }}
-          >
-            Showing {filteredLogs.length} of {logs.length} logs
+        <div className="mb-4 flex items-center justify-between">
+          <p className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Showing <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{filteredLogs.length}</span> of {logs.length} logs
           </p>
         </div>
 
         {/* Loading State */}
         {isLoading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
           </div>
         ) : (
           /* Logs Table */
-          <div
-            className="rounded-xl shadow-lg overflow-hidden transition-colors duration-300"
-            style={{
-              backgroundColor: isDark
-                ? "rgb(31, 41, 55)"
-                : "rgb(255, 255, 255)",
-            }}
-          >
+          <div className={`rounded-3xl shadow-xl overflow-hidden border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead
-                  style={{
-                    backgroundColor: isDark
-                      ? "rgb(55, 65, 81)"
-                      : "rgb(249, 250, 251)",
-                  }}
-                >
+                <thead className={`border-b ${isDark ? 'bg-slate-900/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                   <tr>
-                    <th
-                      className="px-6 py-4 text-left text-sm font-semibold"
-                      style={{
-                        color: isDark
-                          ? "rgb(209, 213, 219)"
-                          : "rgb(55, 65, 81)",
-                      }}
-                    >
-                      Timestamp
-                    </th>
-                    <th
-                      className="px-6 py-4 text-left text-sm font-semibold"
-                      style={{
-                        color: isDark
-                          ? "rgb(209, 213, 219)"
-                          : "rgb(55, 65, 81)",
-                      }}
-                    >
-                      Room
-                    </th>
-                    <th
-                      className="px-6 py-4 text-left text-sm font-semibold"
-                      style={{
-                        color: isDark
-                          ? "rgb(209, 213, 219)"
-                          : "rgb(55, 65, 81)",
-                      }}
-                    >
-                      Action
-                    </th>
-                    <th
-                      className="px-6 py-4 text-left text-sm font-semibold"
-                      style={{
-                        color: isDark
-                          ? "rgb(209, 213, 219)"
-                          : "rgb(55, 65, 81)",
-                      }}
-                    >
-                      Device
-                    </th>
-                    <th
-                      className="px-6 py-4 text-left text-sm font-semibold"
-                      style={{
-                        color: isDark
-                          ? "rgb(209, 213, 219)"
-                          : "rgb(55, 65, 81)",
-                      }}
-                    >
-                      Changes
-                    </th>
-                    <th
-                      className="px-6 py-4 text-left text-sm font-semibold"
-                      style={{
-                        color: isDark
-                          ? "rgb(209, 213, 219)"
-                          : "rgb(55, 65, 81)",
-                      }}
-                    >
-                      User
-                    </th>
-                    <th
-                      className="px-6 py-4 text-left text-sm font-semibold"
-                      style={{
-                        color: isDark
-                          ? "rgb(209, 213, 219)"
-                          : "rgb(55, 65, 81)",
-                      }}
-                    >
-                      Mode
-                    </th>
+                    <th className={`px-6 py-4 text-left text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Timestamp</th>
+                    <th className={`px-6 py-4 text-left text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Room</th>
+                    <th className={`px-6 py-4 text-left text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Action</th>
+                    <th className={`px-6 py-4 text-left text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Device</th>
+                    <th className={`px-6 py-4 text-left text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Changes</th>
+                    <th className={`px-6 py-4 text-left text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>User</th>
+                    <th className={`px-6 py-4 text-left text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Mode</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {filteredLogs.map((log, index) => {
+                <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-slate-100'}`}>
+                  {filteredLogs.map((log) => {
                     const colors = getActionColor(log.action);
                     return (
-                      <tr
+                      <tr 
                         key={log.id}
-                        className="border-t transition-colors duration-200 hover:bg-opacity-50"
-                        style={{
-                          borderColor: isDark
-                            ? "rgb(75, 85, 99)"
-                            : "rgb(229, 231, 235)",
-                          backgroundColor: isDark
-                            ? index % 2 === 0
-                              ? "transparent"
-                              : "rgba(55, 65, 81, 0.3)"
-                            : index % 2 === 0
-                            ? "transparent"
-                            : "rgba(249, 250, 251, 0.5)",
-                        }}
+                        className={`transition-colors ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-slate-50'}`}
                       >
-                        <td
-                          className="px-6 py-4 text-sm whitespace-nowrap"
-                          style={{
-                            color: isDark
-                              ? "rgb(209, 213, 219)"
-                              : "rgb(75, 85, 99)",
-                          }}
-                        >
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                           {log.timestamp}
                         </td>
-                        <td
-                          className="px-6 py-4 font-medium"
-                          style={{
-                            color: isDark
-                              ? "rgb(243, 244, 246)"
-                              : "rgb(31, 41, 55)",
-                          }}
-                        >
+                        <td className={`px-6 py-4 whitespace-nowrap font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
                           {log.room}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
-                            <span
-                              className="p-2 rounded-lg"
-                              style={{
-                                backgroundColor: isDark
-                                  ? "rgba(59, 130, 246, 0.2)"
-                                  : colors.bg,
-                                color: isDark
-                                  ? "rgb(147, 197, 253)"
-                                  : colors.text,
-                              }}
-                            >
+                            <span className={`p-1.5 rounded-lg ${colors.bg} ${colors.text}`}>
                               {getActionIcon(log.action)}
                             </span>
-                            <span
-                              className="text-sm font-medium"
-                              style={{
-                                color: isDark
-                                  ? "rgb(209, 213, 219)"
-                                  : "rgb(55, 65, 81)",
-                              }}
-                            >
+                            <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                               {log.action.replace(/_/g, " ").toUpperCase()}
                             </span>
                           </div>
                         </td>
-                        <td
-                          className="px-6 py-4"
-                          style={{
-                            color: isDark
-                              ? "rgb(209, 213, 219)"
-                              : "rgb(75, 85, 99)",
-                          }}
-                        >
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                           {log.device}
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm">
-                            <span
-                              style={{
-                                color: isDark
-                                  ? "rgb(248, 113, 113)"
-                                  : "rgb(220, 38, 38)",
-                              }}
-                            >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="font-medium text-red-500 line-through opacity-70">
                               {log.oldValue}
                             </span>
-                            <span
-                              className="mx-2"
-                              style={{
-                                color: isDark
-                                  ? "rgb(156, 163, 175)"
-                                  : "rgb(107, 114, 128)",
-                              }}
-                            >
-                              →
-                            </span>
-                            <span
-                              style={{
-                                color: isDark
-                                  ? "rgb(134, 239, 172)"
-                                  : "rgb(21, 128, 61)",
-                              }}
-                            >
+                            <span className={`${isDark ? 'text-slate-500' : 'text-slate-400'}`}>→</span>
+                            <span className="font-bold text-green-500">
                               {log.newValue}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
-                            <FaUser
-                              className="text-sm"
-                              style={{
-                                color: isDark
-                                  ? "rgb(156, 163, 175)"
-                                  : "rgb(107, 114, 128)",
-                              }}
-                            />
-                            <span
-                              className="text-sm"
-                              style={{
-                                color: isDark
-                                  ? "rgb(209, 213, 219)"
-                                  : "rgb(55, 65, 81)",
-                              }}
-                            >
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-600'}`}>
+                                <FaUser className="text-[10px]" />
+                            </div>
+                            <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                               {log.user}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className="px-3 py-1 rounded-full text-xs font-semibold"
-                            style={{
-                              backgroundColor:
-                                log.mode === "auto"
-                                  ? isDark
-                                    ? "rgba(34, 197, 94, 0.2)"
-                                    : "rgb(220, 252, 231)"
-                                  : isDark
-                                  ? "rgba(59, 130, 246, 0.2)"
-                                  : "rgb(219, 234, 254)",
-                              color:
-                                log.mode === "auto"
-                                  ? isDark
-                                    ? "rgb(134, 239, 172)"
-                                    : "rgb(21, 128, 61)"
-                                  : isDark
-                                  ? "rgb(147, 197, 253)"
-                                  : "rgb(37, 99, 235)",
-                            }}
-                          >
-                            {log.mode.toUpperCase()}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
+                            log.mode === "auto"
+                              ? isDark ? 'bg-green-900/20 text-green-400 border border-green-900/30' : 'bg-green-50 text-green-600 border border-green-100'
+                              : isDark ? 'bg-blue-900/20 text-blue-400 border border-blue-900/30' : 'bg-blue-50 text-blue-600 border border-blue-100'
+                          }`}>
+                            {log.mode}
                           </span>
                         </td>
                       </tr>
@@ -787,15 +527,12 @@ const ActivityLogsPage = () => {
 
             {/* Empty State */}
             {filteredLogs.length === 0 && (
-              <div className="text-center py-12">
-                <p
-                  className="text-lg"
-                  style={{
-                    color: isDark ? "rgb(156, 163, 175)" : "rgb(107, 114, 128)",
-                  }}
-                >
-                  No activity logs found
-                </p>
+              <div className="text-center py-16">
+                <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 ${isDark ? 'bg-slate-800 text-slate-600' : 'bg-slate-100 text-slate-400'}`}>
+                    <FaHistory className="text-2xl" />
+                </div>
+                <h3 className={`text-lg font-semibold mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>No logs found</h3>
+                <p className={`${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Try adjusting your filters</p>
               </div>
             )}
           </div>

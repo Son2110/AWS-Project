@@ -11,6 +11,7 @@ import DashboardPage from "./pages/DashboardPage";
 import RoomDetailPage from "./pages/RoomDetailPage";
 import ManagerManagementPage from "./pages/ManagerManagementPage";
 import ActivityLogsPage from "./pages/ActivityLogsPage";
+import LandingPage from "./pages/LandingPage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredGroup }) => {
@@ -18,7 +19,7 @@ const ProtectedRoute = ({ children, requiredGroup }) => {
   const userGroups = JSON.parse(localStorage.getItem("userGroups") || "[]");
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (requiredGroup && !userGroups.includes(requiredGroup)) {
@@ -33,7 +34,8 @@ function App() {
     <ThemeProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<LoginPage />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route
             path="/dashboard"

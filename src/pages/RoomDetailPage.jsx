@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FaArrowLeft, FaThermometerHalf, FaTint, FaSun } from "react-icons/fa";
+import { FaArrowLeft, FaThermometerHalf, FaTint, FaSun, FaClock, FaSave, FaTimes } from "react-icons/fa";
 import {
   LineChart,
   Line,
@@ -10,6 +10,8 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  AreaChart,
+  Area,
 } from "recharts";
 import { useTheme } from "../context/ThemeContext";
 import ThemeToggle from "../components/layout/ThemeToggle";
@@ -109,16 +111,6 @@ const RoomDetailPage = () => {
     });
   };
 
-  const getRoomName = (id) => {
-    const names = {
-      "room-a": "Meeting Room A",
-      "room-b": "Meeting Room B",
-      "server-room": "Server Room",
-      "office-1": "Office 1",
-    };
-    return names[id] || "Room";
-  };
-
   const handleSaveSettings = async () => {
     setShowConfirmModal(false);
     try {
@@ -160,700 +152,459 @@ const RoomDetailPage = () => {
 
   if (isLoading) {
     return (
-      <div
-        className="min-h-screen flex justify-center items-center transition-colors duration-300"
-        style={{
-          backgroundColor: isDark ? "rgb(17, 24, 39)" : "rgb(243, 244, 246)",
-        }}
-      >
-        <div
-          className="animate-spin rounded-full h-16 w-16 border-b-4"
-          style={{
-            borderColor: isDark ? "rgb(147, 197, 253)" : "rgb(37, 99, 235)",
-          }}
-        ></div>
+      <div className={`min-h-screen flex justify-center items-center transition-colors duration-300 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-500 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div
-      className="min-h-screen transition-colors duration-300"
-      style={{
-        backgroundColor: isDark ? "rgb(17, 24, 39)" : "rgb(243, 244, 246)",
-      }}
-    >
+    <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
+      {/* Background Elements */}
+      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div className={`absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full blur-3xl opacity-20 ${isDark ? 'bg-indigo-900' : 'bg-indigo-200'}`}></div>
+        <div className={`absolute top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full blur-3xl opacity-20 ${isDark ? 'bg-violet-900' : 'bg-violet-200'}`}></div>
+      </div>
+
       {/* Header */}
-      <header
-        className="shadow-md transition-colors duration-300"
-        style={{
-          backgroundColor: isDark ? "rgb(31, 41, 55)" : "rgb(255, 255, 255)",
-        }}
-      >
+      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors duration-300 ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
         <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center mb-2">
+          <div className="flex justify-between items-center mb-4">
             <button
               onClick={() => navigate("/dashboard")}
-              className="flex items-center gap-2 font-medium transition-colors duration-300"
-              style={{
-                color: isDark ? "rgb(147, 197, 253)" : "rgb(37, 99, 235)",
-              }}
+              className={`flex items-center gap-2 font-medium transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
             >
               <FaArrowLeft />
               <span>Back to Overview</span>
             </button>
             <ThemeToggle />
           </div>
-          <h1
-            className="text-3xl font-bold transition-colors duration-300"
-            style={{ color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)" }}
-          >
-            {roomData?.name}
-          </h1>
-        </div>
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+                <h1 className={`text-3xl font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {roomData?.name}
+                </h1>
+                <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Manage environment settings and view real-time data
+                </p>
+            </div>
 
-        {/* Tab Navigation */}
-        <div className="container mx-auto px-4 mt-4">
-          <div
-            className="flex gap-2 border-b-2"
-            style={{
-              borderColor: isDark ? "rgb(75, 85, 99)" : "rgb(229, 231, 235)",
-            }}
-          >
-            <button
-              onClick={() => setActiveTab("dashboard")}
-              className="px-6 py-3 font-semibold transition-all"
-              style={{
-                color:
-                  activeTab === "dashboard"
-                    ? isDark
-                      ? "rgb(147, 197, 253)"
-                      : "rgb(37, 99, 235)"
-                    : isDark
-                    ? "rgb(156, 163, 175)"
-                    : "rgb(107, 114, 128)",
-                borderBottom: activeTab === "dashboard" ? "3px solid" : "none",
-                borderColor:
-                  activeTab === "dashboard"
-                    ? isDark
-                      ? "rgb(147, 197, 253)"
-                      : "rgb(37, 99, 235)"
-                    : "transparent",
-              }}
-            >
-              Dashboard
-            </button>
-            <button
-              onClick={() => setActiveTab("config")}
-              className="px-6 py-3 font-semibold transition-all"
-              style={{
-                color:
-                  activeTab === "config"
-                    ? isDark
-                      ? "rgb(147, 197, 253)"
-                      : "rgb(37, 99, 235)"
-                    : isDark
-                    ? "rgb(156, 163, 175)"
-                    : "rgb(107, 114, 128)",
-                borderBottom: activeTab === "config" ? "3px solid" : "none",
-                borderColor:
-                  activeTab === "config"
-                    ? isDark
-                      ? "rgb(147, 197, 253)"
-                      : "rgb(37, 99, 235)"
-                    : "transparent",
-              }}
-            >
-              Configuration
-            </button>
+            {/* Tab Navigation */}
+            <div className={`flex p-1 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                <button
+                    onClick={() => setActiveTab("dashboard")}
+                    className={`px-6 py-2 rounded-lg font-semibold text-sm transition-all ${
+                        activeTab === "dashboard"
+                            ? isDark 
+                                ? 'bg-indigo-600 text-white shadow-lg' 
+                                : 'bg-white text-indigo-600 shadow-sm'
+                            : isDark 
+                                ? 'text-slate-400 hover:text-white' 
+                                : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                >
+                    Dashboard
+                </button>
+                <button
+                    onClick={() => setActiveTab("config")}
+                    className={`px-6 py-2 rounded-lg font-semibold text-sm transition-all ${
+                        activeTab === "config"
+                            ? isDark 
+                                ? 'bg-indigo-600 text-white shadow-lg' 
+                                : 'bg-white text-indigo-600 shadow-sm'
+                            : isDark 
+                                ? 'text-slate-400 hover:text-white' 
+                                : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                >
+                    Configuration
+                </button>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 relative z-10">
         {/* Dashboard Tab */}
         {activeTab === "dashboard" && (
-          <div className="space-y-6">
+          <div className="space-y-8 animate-fade-in">
             {/* Current Readings */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div
-                className="rounded-xl shadow-lg p-8 text-center transition-colors duration-300"
-                style={{
-                  backgroundColor: isDark
-                    ? "rgb(31, 41, 55)"
-                    : "rgb(255, 255, 255)",
-                }}
-              >
-                <FaThermometerHalf className="text-5xl text-red-500 mx-auto mb-3" />
-                <p
-                  className="text-sm mb-2 transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(156, 163, 175)" : "rgb(75, 85, 99)",
-                  }}
-                >
-                  Temperature
-                </p>
-                <p
-                  className="text-3xl font-bold transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                  }}
-                >
-                  {roomData?.currentTemp}°C
-                </p>
+              {/* Temperature Card */}
+              <div className={`rounded-3xl p-6 relative overflow-hidden group ${isDark ? 'bg-slate-800' : 'bg-white'} shadow-xl`}>
+                <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity`}>
+                    <FaThermometerHalf className="text-9xl" />
+                </div>
+                <div className="relative z-10">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isDark ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-orange-500'}`}>
+                        <FaThermometerHalf className="text-2xl" />
+                    </div>
+                    <p className={`text-sm font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Temperature</p>
+                    <p className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {roomData?.currentTemp}°C
+                    </p>
+                </div>
               </div>
 
-              <div
-                className="rounded-xl shadow-lg p-8 text-center transition-colors duration-300"
-                style={{
-                  backgroundColor: isDark
-                    ? "rgb(31, 41, 55)"
-                    : "rgb(255, 255, 255)",
-                }}
-              >
-                <FaTint className="text-5xl text-blue-500 mx-auto mb-3" />
-                <p
-                  className="text-sm mb-2 transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(156, 163, 175)" : "rgb(75, 85, 99)",
-                  }}
-                >
-                  Humidity
-                </p>
-                <p
-                  className="text-3xl font-bold transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                  }}
-                >
-                  {roomData?.currentHumidity}%
-                </p>
+              {/* Humidity Card */}
+              <div className={`rounded-3xl p-6 relative overflow-hidden group ${isDark ? 'bg-slate-800' : 'bg-white'} shadow-xl`}>
+                <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity`}>
+                    <FaTint className="text-9xl" />
+                </div>
+                <div className="relative z-10">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-500'}`}>
+                        <FaTint className="text-2xl" />
+                    </div>
+                    <p className={`text-sm font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Humidity</p>
+                    <p className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {roomData?.currentHumidity}%
+                    </p>
+                </div>
               </div>
 
-              <div
-                className="rounded-xl shadow-lg p-8 text-center transition-colors duration-300"
-                style={{
-                  backgroundColor: isDark
-                    ? "rgb(31, 41, 55)"
-                    : "rgb(255, 255, 255)",
-                }}
-              >
-                <FaSun className="text-5xl text-yellow-500 mx-auto mb-3" />
-                <p
-                  className="text-sm mb-2 transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(156, 163, 175)" : "rgb(75, 85, 99)",
-                  }}
-                >
-                  Light
-                </p>
-                <p
-                  className="text-3xl font-bold transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                  }}
-                >
-                  {roomData?.currentLight} lux
-                </p>
+              {/* Light Card */}
+              <div className={`rounded-3xl p-6 relative overflow-hidden group ${isDark ? 'bg-slate-800' : 'bg-white'} shadow-xl`}>
+                <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity`}>
+                    <FaSun className="text-9xl" />
+                </div>
+                <div className="relative z-10">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isDark ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-500'}`}>
+                        <FaSun className="text-2xl" />
+                    </div>
+                    <p className={`text-sm font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Light Intensity</p>
+                    <p className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {roomData?.currentLight} <span className="text-lg font-normal opacity-60">lux</span>
+                    </p>
+                </div>
               </div>
             </div>
 
             {/* Chart Section */}
-            <div
-              className="rounded-xl shadow-lg p-6 transition-colors duration-300"
-              style={{
-                backgroundColor: isDark
-                  ? "rgb(31, 41, 55)"
-                  : "rgb(255, 255, 255)",
-              }}
-            >
-              <h2
-                className="text-2xl font-bold mb-4 transition-colors duration-300"
-                style={{
-                  color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                }}
-              >
-                Historical Data
-                <span
-                  className="text-sm font-normal ml-2 transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(156, 163, 175)" : "rgb(107, 114, 128)",
-                  }}
-                >
-                  (Last 24 Hours)
-                </span>
-              </h2>
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="temperature"
-                    stroke="#ef4444"
-                    name="Temperature (°C)"
-                    strokeWidth={2}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="humidity"
-                    stroke="#3b82f6"
-                    name="Humidity (%)"
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className={`rounded-3xl shadow-xl p-6 md:p-8 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                    <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        Environmental Trends
+                    </h2>
+                    <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Last 24 Hours
+                    </p>
+                </div>
+              </div>
+              
+              <div className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData}>
+                    <defs>
+                        <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorHumid" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#374151" : "#e5e7eb"} vertical={false} />
+                    <XAxis 
+                        dataKey="time" 
+                        stroke={isDark ? "#9ca3af" : "#6b7280"} 
+                        tickLine={false}
+                        axisLine={false}
+                        dy={10}
+                    />
+                    <YAxis 
+                        stroke={isDark ? "#9ca3af" : "#6b7280"} 
+                        tickLine={false}
+                        axisLine={false}
+                        dx={-10}
+                    />
+                    <Tooltip 
+                        contentStyle={{
+                            backgroundColor: isDark ? "#1f2937" : "#ffffff",
+                            borderColor: isDark ? "#374151" : "#e5e7eb",
+                            borderRadius: "12px",
+                            boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                            color: isDark ? "#f3f4f6" : "#111827"
+                        }}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ paddingTop: "20px" }} />
+                    <Area
+                        type="monotone"
+                        dataKey="temperature"
+                        stroke="#ef4444"
+                        strokeWidth={3}
+                        fillOpacity={1}
+                        fill="url(#colorTemp)"
+                        name="Temperature (°C)"
+                    />
+                    <Area
+                        type="monotone"
+                        dataKey="humidity"
+                        stroke="#3b82f6"
+                        strokeWidth={3}
+                        fillOpacity={1}
+                        fill="url(#colorHumid)"
+                        name="Humidity (%)"
+                    />
+                    </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
         )}
 
         {/* Configuration Tab */}
         {activeTab === "config" && (
-          <div className="max-w-2xl mx-auto">
-            <div
-              className="rounded-xl shadow-lg p-6 transition-colors duration-300"
-              style={{
-                backgroundColor: isDark
-                  ? "rgb(31, 41, 55)"
-                  : "rgb(255, 255, 255)",
-              }}
-            >
-              <h2
-                className="text-2xl font-bold mb-6 transition-colors duration-300"
-                style={{
-                  color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                }}
-              >
-                Room Configuration
-              </h2>
+          <div className="max-w-3xl mx-auto animate-fade-in">
+            <div className={`rounded-3xl shadow-xl overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+                <div className={`p-8 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
+                    <h2 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        Room Configuration
+                    </h2>
+                    <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Adjust automated systems and targets
+                    </p>
+                </div>
 
-              {/* Temperature Control */}
-              <div className="mb-6">
-                <label
-                  className="block text-sm font-bold mb-3 transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                  }}
-                >
-                  <FaThermometerHalf className="inline mr-2 " />
-                  Temperature Mode
-                </label>
-                <div className="flex gap-2 mb-3">
-                  {["auto", "manual", "off"].map((mode) => {
-                    const getColor = () => {
-                      if (mode === "auto") return "rgb(22, 163, 74)";
-                      if (mode === "manual") return "rgb(234, 179, 8)";
-                      return "rgb(239, 68, 68)";
-                    };
-                    return (
-                      <button
-                        key={mode}
-                        onClick={() =>
-                          setConfigData({
-                            ...configData,
-                            temperatureMode: mode,
-                          })
-                        }
-                        className="flex-1 py-2 px-3 rounded-lg font-medium transition-all text-sm"
-                        style={{
-                          backgroundColor:
-                            configData.temperatureMode === mode
-                              ? getColor()
-                              : isDark
-                              ? "rgb(55, 65, 81)"
-                              : "rgb(229, 231, 235)",
-                          color:
-                            configData.temperatureMode === mode
-                              ? "rgb(255, 255, 255)"
-                              : isDark
-                              ? "rgb(156, 163, 175)"
-                              : "rgb(75, 85, 99)",
-                        }}
-                      >
-                        {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className="text-sm transition-colors duration-300"
-                    style={{
-                      color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                    }}
-                  >
-                    Target:
-                  </span>
-                  <input
-                    type="number"
-                    value={configData.targetTemperature}
-                    onChange={(e) =>
-                      setConfigData({
-                        ...configData,
-                        targetTemperature: parseInt(e.target.value),
-                      })
-                    }
-                    disabled={configData.temperatureMode !== "auto"}
-                    className="flex-1 px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{
-                      backgroundColor: isDark
-                        ? "rgb(55, 65, 81)"
-                        : "rgb(255, 255, 255)",
-                      color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                      borderColor: isDark
-                        ? "rgb(75, 85, 99)"
-                        : "rgb(209, 213, 219)",
-                    }}
-                  />
-                  <span
-                    className="transition-colors duration-300"
-                    style={{
-                      color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                    }}
-                  >
-                    °C
-                  </span>
-                </div>
-              </div>
+                <div className="p-8 space-y-8">
+                    {/* Temperature Control */}
+                    <div className={`p-6 rounded-2xl border ${isDark ? 'bg-slate-900/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-orange-500'}`}>
+                                <FaThermometerHalf />
+                            </div>
+                            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Temperature Control</h3>
+                        </div>
 
-              {/* Humidity Control */}
-              <div className="mb-6">
-                <label
-                  className="block text-sm font-bold mb-3 transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                  }}
-                >
-                  <FaTint className="inline mr-2" />
-                  Humidity Mode
-                </label>
-                <div className="flex gap-2 mb-3">
-                  {["auto", "manual", "off"].map((mode) => {
-                    const getColor = () => {
-                      if (mode === "auto") return "rgb(22, 163, 74)";
-                      if (mode === "manual") return "rgb(234, 179, 8)";
-                      return "rgb(239, 68, 68)";
-                    };
-                    return (
-                      <button
-                        key={mode}
-                        onClick={() =>
-                          setConfigData({ ...configData, humidityMode: mode })
-                        }
-                        className="flex-1 py-2 px-3 rounded-lg font-medium transition-all text-sm"
-                        style={{
-                          backgroundColor:
-                            configData.humidityMode === mode
-                              ? getColor()
-                              : isDark
-                              ? "rgb(55, 65, 81)"
-                              : "rgb(229, 231, 235)",
-                          color:
-                            configData.humidityMode === mode
-                              ? "rgb(255, 255, 255)"
-                              : isDark
-                              ? "rgb(156, 163, 175)"
-                              : "rgb(75, 85, 99)",
-                        }}
-                      >
-                        {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className="text-sm transition-colors duration-300"
-                    style={{
-                      color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                    }}
-                  >
-                    Target:
-                  </span>
-                  <input
-                    type="number"
-                    value={configData.targetHumidity}
-                    onChange={(e) =>
-                      setConfigData({
-                        ...configData,
-                        targetHumidity: parseInt(e.target.value),
-                      })
-                    }
-                    disabled={configData.humidityMode !== "auto"}
-                    className="flex-1 px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{
-                      backgroundColor: isDark
-                        ? "rgb(55, 65, 81)"
-                        : "rgb(255, 255, 255)",
-                      color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                      borderColor: isDark
-                        ? "rgb(75, 85, 99)"
-                        : "rgb(209, 213, 219)",
-                    }}
-                  />
-                  <span
-                    className="transition-colors duration-300"
-                    style={{
-                      color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                    }}
-                  >
-                    %
-                  </span>
-                </div>
-              </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Operation Mode</label>
+                                <div className={`flex p-1 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-white border border-slate-200'}`}>
+                                    {["auto", "manual", "off"].map((mode) => (
+                                        <button
+                                            key={mode}
+                                            onClick={() => setConfigData({ ...configData, temperatureMode: mode })}
+                                            className={`flex-1 py-2 rounded-lg text-sm font-medium capitalize transition-all ${
+                                                configData.temperatureMode === mode
+                                                    ? 'bg-indigo-600 text-white shadow-md'
+                                                    : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
+                                            }`}
+                                        >
+                                            {mode}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Target Temperature</label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        value={configData.targetTemperature}
+                                        onChange={(e) => setConfigData({ ...configData, targetTemperature: parseInt(e.target.value) })}
+                                        disabled={configData.temperatureMode !== "auto"}
+                                        className={`w-full px-4 py-2.5 rounded-xl border-2 outline-none transition-all ${
+                                            isDark 
+                                                ? 'bg-slate-800 border-slate-700 focus:border-indigo-500 text-white' 
+                                                : 'bg-white border-slate-200 focus:border-indigo-500 text-slate-900'
+                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    />
+                                    <span className={`absolute right-4 top-1/2 -translate-y-1/2 font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>°C</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-              {/* Light Control */}
-              <div className="mb-6">
-                <label
-                  className="block text-sm font-bold mb-3 transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                  }}
-                >
-                  <FaSun className="inline mr-2" />
-                  Light Mode
-                </label>
-                <div className="flex gap-2 mb-3">
-                  {["auto", "manual", "off"].map((mode) => {
-                    const getColor = () => {
-                      if (mode === "auto") return "rgb(22, 163, 74)";
-                      if (mode === "manual") return "rgb(234, 179, 8)";
-                      return "rgb(239, 68, 68)";
-                    };
-                    return (
-                      <button
-                        key={mode}
-                        onClick={() =>
-                          setConfigData({ ...configData, lightMode: mode })
-                        }
-                        className="flex-1 py-2 px-3 rounded-lg font-medium transition-all text-sm"
-                        style={{
-                          backgroundColor:
-                            configData.lightMode === mode
-                              ? getColor()
-                              : isDark
-                              ? "rgb(55, 65, 81)"
-                              : "rgb(229, 231, 235)",
-                          color:
-                            configData.lightMode === mode
-                              ? "rgb(255, 255, 255)"
-                              : isDark
-                              ? "rgb(156, 163, 175)"
-                              : "rgb(75, 85, 99)",
-                        }}
-                      >
-                        {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className="text-sm transition-colors duration-300"
-                    style={{
-                      color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                    }}
-                  >
-                    Target:
-                  </span>
-                  <input
-                    type="number"
-                    value={configData.targetLight}
-                    onChange={(e) =>
-                      setConfigData({
-                        ...configData,
-                        targetLight: parseInt(e.target.value),
-                      })
-                    }
-                    disabled={configData.lightMode !== "auto"}
-                    className="flex-1 px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{
-                      backgroundColor: isDark
-                        ? "rgb(55, 65, 81)"
-                        : "rgb(255, 255, 255)",
-                      color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                      borderColor: isDark
-                        ? "rgb(75, 85, 99)"
-                        : "rgb(209, 213, 219)",
-                    }}
-                  />
-                  <span
-                    className="transition-colors duration-300"
-                    style={{
-                      color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                    }}
-                  >
-                    lux
-                  </span>
-                </div>
-              </div>
+                    {/* Humidity Control */}
+                    <div className={`p-6 rounded-2xl border ${isDark ? 'bg-slate-900/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-500'}`}>
+                                <FaTint />
+                            </div>
+                            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Humidity Control</h3>
+                        </div>
 
-              {/* Schedule Settings */}
-              <div
-                className="mb-6 p-4 rounded-lg transition-colors duration-300"
-                style={{
-                  backgroundColor: isDark
-                    ? "rgba(34, 197, 94, 0.1)"
-                    : "rgb(240, 253, 244)",
-                }}
-              >
-                <h3
-                  className="font-semibold mb-4 transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                  }}
-                >
-                  Auto Schedule
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label
-                      className="block text-sm mb-2 transition-colors duration-300"
-                      style={{
-                        color: isDark
-                          ? "rgb(209, 213, 219)"
-                          : "rgb(55, 65, 81)",
-                      }}
-                    >
-                      Auto On Time
-                    </label>
-                    <input
-                      type="time"
-                      value={configData.autoOnTime}
-                      onChange={(e) =>
-                        setConfigData({
-                          ...configData,
-                          autoOnTime: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors duration-300"
-                      style={{
-                        backgroundColor: isDark
-                          ? "rgb(55, 65, 81)"
-                          : "rgb(255, 255, 255)",
-                        color: isDark
-                          ? "rgb(243, 244, 246)"
-                          : "rgb(31, 41, 55)",
-                        borderColor: isDark
-                          ? "rgb(75, 85, 99)"
-                          : "rgb(209, 213, 219)",
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className="block text-sm mb-2 transition-colors duration-300"
-                      style={{
-                        color: isDark
-                          ? "rgb(209, 213, 219)"
-                          : "rgb(55, 65, 81)",
-                      }}
-                    >
-                      Auto Off Time
-                    </label>
-                    <input
-                      type="time"
-                      value={configData.autoOffTime}
-                      onChange={(e) =>
-                        setConfigData({
-                          ...configData,
-                          autoOffTime: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors duration-300"
-                      style={{
-                        backgroundColor: isDark
-                          ? "rgb(55, 65, 81)"
-                          : "rgb(255, 255, 255)",
-                        color: isDark
-                          ? "rgb(243, 244, 246)"
-                          : "rgb(31, 41, 55)",
-                        borderColor: isDark
-                          ? "rgb(75, 85, 99)"
-                          : "rgb(209, 213, 219)",
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Operation Mode</label>
+                                <div className={`flex p-1 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-white border border-slate-200'}`}>
+                                    {["auto", "manual", "off"].map((mode) => (
+                                        <button
+                                            key={mode}
+                                            onClick={() => setConfigData({ ...configData, humidityMode: mode })}
+                                            className={`flex-1 py-2 rounded-lg text-sm font-medium capitalize transition-all ${
+                                                configData.humidityMode === mode
+                                                    ? 'bg-indigo-600 text-white shadow-md'
+                                                    : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
+                                            }`}
+                                        >
+                                            {mode}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Target Humidity</label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        value={configData.targetHumidity}
+                                        onChange={(e) => setConfigData({ ...configData, targetHumidity: parseInt(e.target.value) })}
+                                        disabled={configData.humidityMode !== "auto"}
+                                        className={`w-full px-4 py-2.5 rounded-xl border-2 outline-none transition-all ${
+                                            isDark 
+                                                ? 'bg-slate-800 border-slate-700 focus:border-indigo-500 text-white' 
+                                                : 'bg-white border-slate-200 focus:border-indigo-500 text-slate-900'
+                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    />
+                                    <span className={`absolute right-4 top-1/2 -translate-y-1/2 font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-              {/* Save Button */}
-              <button
-                onClick={() => setShowConfirmModal(true)}
-                disabled={isSaving}
-                className="w-full py-3 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: "rgb(22, 163, 74)",
-                  color: "rgb(255, 255, 255)",
-                }}
-              >
-                {isSaving ? "Saving..." : "Save Settings"}
-              </button>
+                    {/* Light Control */}
+                    <div className={`p-6 rounded-2xl border ${isDark ? 'bg-slate-900/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-500'}`}>
+                                <FaSun />
+                            </div>
+                            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Light Control</h3>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Operation Mode</label>
+                                <div className={`flex p-1 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-white border border-slate-200'}`}>
+                                    {["auto", "manual", "off"].map((mode) => (
+                                        <button
+                                            key={mode}
+                                            onClick={() => setConfigData({ ...configData, lightMode: mode })}
+                                            className={`flex-1 py-2 rounded-lg text-sm font-medium capitalize transition-all ${
+                                                configData.lightMode === mode
+                                                    ? 'bg-indigo-600 text-white shadow-md'
+                                                    : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
+                                            }`}
+                                        >
+                                            {mode}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Target Light</label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        value={configData.targetLight}
+                                        onChange={(e) => setConfigData({ ...configData, targetLight: parseInt(e.target.value) })}
+                                        disabled={configData.lightMode !== "auto"}
+                                        className={`w-full px-4 py-2.5 rounded-xl border-2 outline-none transition-all ${
+                                            isDark 
+                                                ? 'bg-slate-800 border-slate-700 focus:border-indigo-500 text-white' 
+                                                : 'bg-white border-slate-200 focus:border-indigo-500 text-slate-900'
+                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    />
+                                    <span className={`absolute right-4 top-1/2 -translate-y-1/2 font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>lux</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Schedule Settings */}
+                    <div className={`p-6 rounded-2xl border ${isDark ? 'bg-green-900/10 border-green-900/30' : 'bg-green-50 border-green-100'}`}>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-500'}`}>
+                                <FaClock />
+                            </div>
+                            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Auto Schedule</h3>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Auto On Time</label>
+                                <input
+                                    type="time"
+                                    value={configData.autoOnTime}
+                                    onChange={(e) => setConfigData({ ...configData, autoOnTime: e.target.value })}
+                                    className={`w-full px-4 py-2.5 rounded-xl border-2 outline-none transition-all ${
+                                        isDark 
+                                            ? 'bg-slate-800 border-slate-700 focus:border-green-500 text-white' 
+                                            : 'bg-white border-slate-200 focus:border-green-500 text-slate-900'
+                                    }`}
+                                />
+                            </div>
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Auto Off Time</label>
+                                <input
+                                    type="time"
+                                    value={configData.autoOffTime}
+                                    onChange={(e) => setConfigData({ ...configData, autoOffTime: e.target.value })}
+                                    className={`w-full px-4 py-2.5 rounded-xl border-2 outline-none transition-all ${
+                                        isDark 
+                                            ? 'bg-slate-800 border-slate-700 focus:border-green-500 text-white' 
+                                            : 'bg-white border-slate-200 focus:border-green-500 text-slate-900'
+                                    }`}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Save Button */}
+                    <div className="pt-4">
+                        <button
+                            onClick={() => setShowConfirmModal(true)}
+                            disabled={isSaving}
+                            className="w-full py-4 rounded-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+                        >
+                            {isSaving ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                                    Saving Settings...
+                                </>
+                            ) : (
+                                <>
+                                    <FaSave /> Save Configuration
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
             </div>
           </div>
         )}
       </main>
 
-      {/* Confirm Modal */}
+      {/* Confirmation Modal */}
       {showConfirmModal && (
-        <div
-          className="fixed inset-0 flex items-center justify-center z-50 p-4"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-        >
-          <div
-            className="rounded-xl shadow-2xl max-w-md w-full transition-colors duration-300"
-            style={{
-              backgroundColor: isDark
-                ? "rgb(31, 41, 55)"
-                : "rgb(255, 255, 255)",
-            }}
-          >
-            <div className="p-6">
-              <h2
-                className="text-2xl font-bold mb-4"
-                style={{
-                  color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                }}
-              >
-                Confirm Changes
-              </h2>
-              <p
-                className="mb-6"
-                style={{
-                  color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                }}
-              >
-                Are you sure you want to save these configuration changes? This
-                will update the room settings.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowConfirmModal(false)}
-                  disabled={isSaving}
-                  className="flex-1 px-4 py-2 rounded-lg border-2 font-semibold transition-colors"
-                  style={{
-                    borderColor: isDark
-                      ? "rgb(75, 85, 99)"
-                      : "rgb(209, 213, 219)",
-                    color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveSettings}
-                  disabled={isSaving}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSaving ? "Saving..." : "Confirm"}
-                </button>
-              </div>
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/50 backdrop-blur-sm">
+            <div className={`rounded-3xl shadow-2xl max-w-md w-full p-8 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+                <h3 className={`text-2xl font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>Confirm Changes</h3>
+                <p className={`mb-8 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Are you sure you want to save these changes to the room configuration?
+                </p>
+                <div className="flex gap-4">
+                    <button
+                        onClick={() => setShowConfirmModal(false)}
+                        className={`flex-1 py-3 rounded-xl font-semibold transition-colors ${
+                            isDark 
+                                ? 'bg-slate-700 hover:bg-slate-600 text-white' 
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                        }`}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSaveSettings}
+                        className="flex-1 py-3 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-500/30 transition-all"
+                    >
+                        Confirm Save
+                    </button>
+                </div>
             </div>
-          </div>
         </div>
       )}
 
