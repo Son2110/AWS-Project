@@ -5,7 +5,7 @@ from decimal import Decimal
 
 # DynamoDB client
 dynamodb = boto3.resource('dynamodb')
-TABLE_NAME = os.environ['TABLE_NAME']
+TABLE_NAME = os.environ['ROOM_CONFIG_TABLE']
 table = dynamodb.Table(TABLE_NAME)
 
 # Helper class to convert Decimal to int/float for JSON serialization

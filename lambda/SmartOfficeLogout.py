@@ -1,8 +1,8 @@
 import json
 import boto3
 
-# Khởi tạo Cognito client với region ap-southeast-1
-cognito_client = boto3.client('cognito-idp', region_name='ap-southeast-1')
+# Khởi tạo Cognito client (không khai báo region ap-southeast-1 để dùng được cho nhiều region)
+cognito_client = boto3.client('cognito-idp')
 
 def lambda_handler(event, context):
     """

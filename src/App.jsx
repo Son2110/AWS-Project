@@ -5,13 +5,16 @@ import {
   Navigate,
 } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
+import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import DashboardPage from "./pages/DashboardPage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
+import OfficeDetailPage from "./pages/OfficeDetailPage";
 import RoomDetailPage from "./pages/RoomDetailPage";
 import ManagerManagementPage from "./pages/ManagerManagementPage";
 import ActivityLogsPage from "./pages/ActivityLogsPage";
-import LandingPage from "./pages/LandingPage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredGroup }) => {
@@ -36,7 +39,24 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requiredGroup="Admin">
+                <AdminDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/office/:officeId"
+            element={
+              <ProtectedRoute requiredGroup="Admin">
+                <OfficeDetailPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/dashboard"
             element={

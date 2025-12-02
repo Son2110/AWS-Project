@@ -50,6 +50,12 @@ const LandingPage = () => {
             >
               Login
             </Link>
+            <Link
+              to="/signup"
+              className={`px-6 py-2.5 rounded-full font-medium transition-all hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 ${isDark ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+            >
+              Sign Up
+            </Link>
           </div>
         </div>
       </nav>
@@ -75,11 +81,12 @@ const LandingPage = () => {
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
                 <Link
-                  to="/login"
+                  to="/signup"
                   className="w-full sm:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-lg shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 transition-all hover:-translate-y-1 flex items-center justify-center gap-2"
                 >
                   Get Started <FaArrowRight />
                 </Link>
+
                 <a
                   href="#features"
                   className={`w-full sm:w-auto px-8 py-4 rounded-full font-bold text-lg border transition-all ${isDark ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700' : 'bg-white text-slate-700 border-slate-200 hover:border-indigo-200 hover:bg-indigo-50'}`}

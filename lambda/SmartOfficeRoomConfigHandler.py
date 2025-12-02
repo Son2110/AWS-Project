@@ -15,7 +15,7 @@ class DecimalEncoder(json.JSONEncoder):
 
 # Create client
 dynamodb = boto3.resource('dynamodb')
-TABLE_NAME = os.environ.get('TABLE_NAME')
+TABLE_NAME = os.environ.get('ROOM_CONFIG_TABLE')
 table = dynamodb.Table(TABLE_NAME)
 
 # List of field to update
@@ -93,8 +93,8 @@ def lambda_handler(event, context):
         expression_values[":lastUpdate"] = current_time_iso
 
         key_to_update = {
-            'officeId': office_id,
-            'roomId': room_id
+            'roomId': room_id,      
+            'officeId': office_id   
         }
 
         response = table.update_item(

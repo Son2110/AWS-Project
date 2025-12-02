@@ -2,10 +2,11 @@ import boto3
 import json
 import os
 from decimal import Decimal
+from boto3.dynamodb.conditions import Key # <--- THÊM IMPORT NÀY
 
 # DynamoDB client
 dynamodb = boto3.resource('dynamodb')
-TABLE_NAME = os.environ['TABLE_NAME']
+TABLE_NAME = os.environ['ROOM_CONFIG_TABLE']
 table = dynamodb.Table(TABLE_NAME)
 
 # Helper class to convert Decimal to int/float for JSON serialization
@@ -58,12 +59,12 @@ def lambda_handler(event, context):
                 })
             }
         
-        # Scan DynamoDB with filter by officeId
+        # --- Use SCAN with FilterExpression since officeId is not the primary key ---
         print(f"Scanning table for officeId: {office_id}")
         response = table.scan(
-            FilterExpression='officeId = :oid',
+            FilterExpression='officeId = :officeId',
             ExpressionAttributeValues={
-                ':oid': office_id
+                ':officeId': office_id
             }
         )
         print(f"Scan completed. Items found: {len(response.get('Items', []))}")
