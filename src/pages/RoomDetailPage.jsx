@@ -8,6 +8,9 @@ import {
   FaClock,
   FaSave,
   FaTimes,
+  FaTrash,
+  FaWifi,
+  FaPowerOff,
 } from "react-icons/fa";
 import {
   LineChart,
@@ -43,10 +46,14 @@ const RoomDetailPage = () => {
     targetLight: 300,
     autoOnTime: "08:00",
     autoOffTime: "17:00",
+    autoControl: "ON",
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [thingName, setThingName] = useState("");
   const [toast, setToast] = useState({
     show: false,
     message: "",
@@ -75,16 +82,26 @@ const RoomDetailPage = () => {
         targetLight: data.targetLight || 300,
         autoOnTime: data.autoOnTime || "08:00",
         autoOffTime: data.autoOffTime || "17:00",
+        autoControl: data.autoControl || "ON",
       });
 
       setRoomData({
         id: roomId,
-        name: `${roomId}`,
+        name: data.thingName,
+        officeId: data.officeId,
+        roomId: data.roomId,
         currentTemp: data.currentTemperature,
         currentHumidity: data.currentHumidity,
         currentLight: data.currentLight,
         lastUpdate: data.lastUpdate,
+        connectionStatus: data.connectionStatus,
+        deviceStatus: data.deviceStatus,
       });
+
+      // Store thingName for delete operation
+      if (data.thingName) {
+        setThingName(data.thingName);
+      }
 
       // Fetch real sensor data from API
       try {
@@ -93,11 +110,8 @@ const RoomDetailPage = () => {
 
         // Transform data for chart
         const transformedData = sensorData.map((item, index) => {
-          // Parse timestamp (format: '29/11/2025 10:38:0')
-          const [datePart, timePart] = item.timestamp.split(" ");
-          const [day, month, year] = datePart.split("/");
-          const [hours, minutes, seconds] = timePart.split(":");
-          const date = new Date(year, month - 1, day, hours, minutes, seconds);
+          // Parse timestamp - Unix timestamp in seconds
+          const date = new Date(item.timestamp * 1000);
 
           // Parse values with units (remove units and convert to numbers)
           const parseValue = (str) => {
@@ -117,7 +131,7 @@ const RoomDetailPage = () => {
             }),
             temperature: parseValue(item.temperature),
             humidity: parseValue(item.humidity),
-            light: parseValue(item.lighting), // Note: 'lighting' not 'light'
+            light: parseValue(item.light),
             // Add index as backup identifier
             index: index,
           };
@@ -145,8 +159,9 @@ const RoomDetailPage = () => {
       targetTemperature: 26,
       targetHumidity: 60,
       targetLight: 300,
-      autoOnTime: "08:00",
-      autoOffTime: "17:00",
+      autoOnTime: "00:00",
+      autoOffTime: "00:00",
+      autoControl: "ON",
     });
     setRoomData({
       id: roomId,
@@ -173,6 +188,7 @@ const RoomDetailPage = () => {
         targetLight: configData.targetLight,
         autoOnTime: configData.autoOnTime,
         autoOffTime: configData.autoOffTime,
+        autoControl: configData.autoControl,
       };
 
       await apiService.updateRoomConfig(roomId, officeId, updates);
@@ -193,6 +209,37 @@ const RoomDetailPage = () => {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteRoom = async () => {
+    setShowDeleteModal(false);
+    try {
+      setIsDeleting(true);
+
+      const officeId = localStorage.getItem("officeId");
+
+      await apiService.deleteRoomConfig(roomId, officeId, thingName);
+
+      setToast({
+        show: true,
+        message: "Room deleted successfully",
+        type: "success",
+      });
+
+      // Navigate back to dashboard after 1.5 seconds
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1500);
+    } catch (error) {
+      console.error("Error deleting room:", error);
+      setToast({
+        show: true,
+        message: error.message || "Failed to delete room",
+        type: "error",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -249,24 +296,86 @@ const RoomDetailPage = () => {
               <FaArrowLeft />
               <span>Back to Overview</span>
             </button>
-            <ThemeToggle />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                disabled={isDeleting}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                  isDark
+                    ? "bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-800"
+                    : "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <FaTrash />
+                <span>Delete Room</span>
+              </button>
+              <ThemeToggle />
+            </div>
           </div>
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <h1
-                className={`text-3xl font-bold mb-1 ${
-                  isDark ? "text-white" : "text-slate-900"
-                }`}
-              >
-                {roomData?.name}
-              </h1>
+              <div className="flex items-center gap-4 mb-1">
+                <h1
+                  className={`text-3xl font-bold ${
+                    isDark ? "text-white" : "text-slate-900"
+                  }`}
+                >
+                  {roomData?.name}
+                </h1>
+
+                {/* Status Indicators */}
+                <div className="flex gap-2">
+                  {/* Connection Status */}
+                  <div className="group/tooltip relative">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                        roomData?.connectionStatus === "ONLINE"
+                          ? "bg-green-500/10 text-green-500"
+                          : "bg-slate-200 text-slate-400 dark:bg-slate-700 dark:text-slate-500"
+                      }`}
+                    >
+                      <FaWifi size={14} />
+                    </div>
+                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                      {roomData?.connectionStatus === "ONLINE"
+                        ? "Online"
+                        : "Offline"}
+                    </div>
+                  </div>
+
+                  {/* Device Status */}
+                  <div className="group/tooltip relative">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                        roomData?.deviceStatus === "ON"
+                          ? "bg-green-500/10 text-green-500"
+                          : "bg-red-500/10 text-red-500"
+                      }`}
+                    >
+                      <FaPowerOff size={14} />
+                    </div>
+                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                      {roomData?.deviceStatus === "ON"
+                        ? "Device On"
+                        : "Device Off"}
+                    </div>
+                  </div>
+                </div>
+              </div>
               <p
                 className={`text-sm ${
                   isDark ? "text-slate-400" : "text-slate-500"
                 }`}
               >
-                Manage environment settings and view real-time data
+                Office Id: {roomData?.officeId}
+              </p>
+              <p
+                className={`text-sm ${
+                  isDark ? "text-slate-400" : "text-slate-500"
+                }`}
+              >
+                Room Id: {roomData?.roomId}
               </p>
             </div>
 
@@ -447,13 +556,6 @@ const RoomDetailPage = () => {
                   >
                     Environmental Trends
                   </h2>
-                  <p
-                    className={`text-sm ${
-                      isDark ? "text-slate-400" : "text-slate-500"
-                    }`}
-                  >
-                    Last 24 Hours
-                  </p>
                 </div>
               </div>
 
@@ -569,7 +671,7 @@ const RoomDetailPage = () => {
                         strokeWidth={3}
                         fillOpacity={1}
                         fill="url(#colorTemp)"
-                        name="Nhiệt độ (°C)"
+                        name="Temperature (°C)"
                       />
                     </AreaChart>
                   )}
@@ -635,7 +737,7 @@ const RoomDetailPage = () => {
                         strokeWidth={3}
                         fillOpacity={1}
                         fill="url(#colorHumid)"
-                        name="Độ ẩm (%)"
+                        name="Humidity (%)"
                       />
                     </AreaChart>
                   )}
@@ -701,7 +803,7 @@ const RoomDetailPage = () => {
                         strokeWidth={3}
                         fillOpacity={1}
                         fill="url(#colorLight)"
-                        name="Ánh sáng (lux)"
+                        name="Light (lux)"
                       />
                     </AreaChart>
                   )}
@@ -1050,23 +1152,60 @@ const RoomDetailPage = () => {
                       : "bg-green-50 border-green-100"
                   }`}
                 >
-                  <div className="flex items-center gap-3 mb-6">
-                    <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                        isDark
-                          ? "bg-green-900/30 text-green-400"
-                          : "bg-green-100 text-green-500"
-                      }`}
-                    >
-                      <FaClock />
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                          isDark
+                            ? "bg-green-900/30 text-green-400"
+                            : "bg-green-100 text-green-500"
+                        }`}
+                      >
+                        <FaClock />
+                      </div>
+                      <h3
+                        className={`text-lg font-bold ${
+                          isDark ? "text-white" : "text-slate-900"
+                        }`}
+                      >
+                        Auto Schedule
+                      </h3>
                     </div>
-                    <h3
-                      className={`text-lg font-bold ${
-                        isDark ? "text-white" : "text-slate-900"
+
+                    {/* Auto Control Toggle */}
+                    <button
+                      onClick={() =>
+                        setConfigData({
+                          ...configData,
+                          autoControl:
+                            configData.autoControl === "ON" ? "OFF" : "ON",
+                        })
+                      }
+                      className={`relative inline-flex items-center h-8 rounded-full w-16 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                        configData.autoControl === "ON"
+                          ? "bg-green-500 focus:ring-green-500"
+                          : isDark
+                          ? "bg-slate-700 focus:ring-slate-500"
+                          : "bg-slate-300 focus:ring-slate-400"
                       }`}
                     >
-                      Auto Schedule
-                    </h3>
+                      <span
+                        className={`inline-block w-6 h-6 transform rounded-full bg-white transition-transform ${
+                          configData.autoControl === "ON"
+                            ? "translate-x-9"
+                            : "translate-x-1"
+                        }`}
+                      />
+                      <span
+                        className={`absolute text-xs font-bold ${
+                          configData.autoControl === "ON"
+                            ? "left-2 text-white"
+                            : "right-2 text-slate-600"
+                        }`}
+                      >
+                        {configData.autoControl}
+                      </span>
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1087,11 +1226,12 @@ const RoomDetailPage = () => {
                             autoOnTime: e.target.value,
                           })
                         }
+                        disabled={configData.autoControl === "OFF"}
                         className={`w-full px-4 py-2.5 rounded-xl border-2 outline-none transition-all ${
                           isDark
                             ? "bg-slate-800 border-slate-700 focus:border-green-500 text-white"
                             : "bg-white border-slate-200 focus:border-green-500 text-slate-900"
-                        }`}
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
                       />
                     </div>
                     <div>
@@ -1111,11 +1251,12 @@ const RoomDetailPage = () => {
                             autoOffTime: e.target.value,
                           })
                         }
+                        disabled={configData.autoControl === "OFF"}
                         className={`w-full px-4 py-2.5 rounded-xl border-2 outline-none transition-all ${
                           isDark
                             ? "bg-slate-800 border-slate-700 focus:border-green-500 text-white"
                             : "bg-white border-slate-200 focus:border-green-500 text-slate-900"
-                        }`}
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
                       />
                     </div>
                   </div>
@@ -1183,6 +1324,67 @@ const RoomDetailPage = () => {
                 className="flex-1 py-3 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-500/30 transition-all"
               >
                 Confirm Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/50 backdrop-blur-sm">
+          <div
+            className={`rounded-3xl shadow-2xl max-w-md w-full p-8 ${
+              isDark ? "bg-slate-800" : "bg-white"
+            }`}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <FaTrash className="text-xl text-red-600 dark:text-red-400" />
+              </div>
+              <h3
+                className={`text-2xl font-bold ${
+                  isDark ? "text-white" : "text-slate-900"
+                }`}
+              >
+                Delete Room
+              </h3>
+            </div>
+            <p
+              className={`mb-2 font-medium ${
+                isDark ? "text-slate-300" : "text-slate-700"
+              }`}
+            >
+              Are you sure you want to delete this room?
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className={`flex-1 py-3 rounded-xl font-semibold transition-colors ${
+                  isDark
+                    ? "bg-slate-700 hover:bg-slate-600 text-white"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteRoom}
+                disabled={isDeleting}
+                className="flex-1 py-3 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-500 shadow-lg shadow-red-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <FaTrash />
+                    Delete Room
+                  </>
+                )}
               </button>
             </div>
           </div>

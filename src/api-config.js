@@ -20,16 +20,14 @@ const API_CONFIG = {
     DELETE_OFFICE_AND_MANAGER: "/admin/delete-office-and-manager",
 
     // User endpoints
-    PROFILE_UPDATE: "/users/profile",
+    PROFILE_UPDATE: "/admin/profile-update",
 
     // Room endpoints
     ROOMS: "/manager/list-room",
     ROOM_CONFIG: "/manager/config-room",
     SENSOR_DATA: "/manager/sensor-data",
     CREATE_ROOM_CONFIG: "/manager/create-room-config",
-
-    // Logs endpoint
-    LOGS: "/logs",
+    DELETE_ROOM_CONFIG: "/manager/delete-room-config",
   },
 };
 

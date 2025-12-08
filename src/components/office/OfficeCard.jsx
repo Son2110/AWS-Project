@@ -13,32 +13,31 @@ const OfficeCard = ({ office, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-2xl cursor-pointer
-        ${
-          isDark
-            ? "bg-slate-800/50 border-slate-700 hover:border-indigo-500/50 hover:bg-slate-800"
-            : "bg-white border-slate-200 hover:border-indigo-500/50 hover:bg-slate-50"
-        }
-      `}
+      className={`group relative overflow-hidden rounded-3xl transition-all duration-300 hover:-translate-y-2 cursor-pointer ${
+        isDark
+          ? "glass-dark hover:shadow-indigo-500/20 hover:border-indigo-500/50"
+          : "glass hover:shadow-xl hover:shadow-indigo-100/50 hover:border-indigo-200"
+      }`}
     >
-      <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      {/* Gradient Overlay on Hover */}
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
       <div className="relative p-6">
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex items-start justify-between mb-6">
           <div
-            className={`p-3 rounded-xl ${
+            className={`p-3 rounded-2xl transition-colors ${
               isDark
-                ? "bg-indigo-500/20 text-indigo-400"
-                : "bg-indigo-50 text-indigo-600"
+                ? "bg-indigo-500/20 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white"
+                : "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white"
             }`}
           >
             <FaBuilding size={24} />
           </div>
           <div
-            className={`p-2 rounded-full transition-colors duration-300 ${
+            className={`p-2 rounded-full transition-all duration-300 transform group-hover:translate-x-1 ${
               isDark
-                ? "bg-slate-700 text-slate-400 group-hover:bg-indigo-500 group-hover:text-white"
-                : "bg-slate-100 text-slate-400 group-hover:bg-indigo-500 group-hover:text-white"
+                ? "bg-slate-800 text-slate-400 group-hover:text-indigo-400"
+                : "bg-slate-100 text-slate-400 group-hover:text-indigo-600"
             }`}
           >
             <FaArrowRight size={14} />
@@ -46,15 +45,15 @@ const OfficeCard = ({ office, onClick }) => {
         </div>
 
         <h3
-          className={`text-xl font-bold mb-2 ${
-            isDark ? "text-white" : "text-slate-900"
+          className={`text-xl font-bold mb-2 transition-colors ${
+            isDark ? "text-white group-hover:text-indigo-300" : "text-slate-900 group-hover:text-indigo-600"
           }`}
         >
           {office.name}
         </h3>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
+        <div className="space-y-3 mb-6">
+          <div className="flex items-center gap-3">
             <FaMapMarkerAlt
               className={isDark ? "text-slate-500" : "text-slate-400"}
               size={14}
@@ -68,7 +67,7 @@ const OfficeCard = ({ office, onClick }) => {
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <FaUsers
               className={isDark ? "text-slate-500" : "text-slate-400"}
               size={14}
@@ -84,25 +83,25 @@ const OfficeCard = ({ office, onClick }) => {
         </div>
 
         <div
-          className={`mt-6 pt-4 border-t flex items-center justify-between ${
-            isDark ? "border-slate-700" : "border-slate-100"
+          className={`pt-4 border-t flex items-center justify-between ${
+            isDark ? "border-slate-700/50" : "border-slate-100"
           }`}
         >
           <span
-            className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+            className={`text-xs font-semibold px-3 py-1 rounded-full ${
               office.manager?.managerStatus === "ACTIVE"
                 ? isDark
-                  ? "bg-emerald-500/20 text-emerald-400"
-                  : "bg-emerald-100 text-emerald-700"
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  : "bg-emerald-50 text-emerald-600 border border-emerald-200"
                 : isDark
-                ? "bg-slate-700 text-slate-400"
-                : "bg-slate-100 text-slate-600"
+                ? "bg-slate-800 text-slate-400 border border-slate-700"
+                : "bg-slate-100 text-slate-500 border border-slate-200"
             }`}
           >
             {office.manager?.managerStatus || "N/A"}
           </span>
           <span
-            className={`text-xs ${
+            className={`text-xs font-medium ${
               isDark ? "text-slate-500" : "text-slate-400"
             }`}
           >

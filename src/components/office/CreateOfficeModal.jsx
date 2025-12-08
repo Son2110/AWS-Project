@@ -197,16 +197,16 @@ const CreateOfficeModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
       <div
-        className={`w-full max-w-2xl rounded-2xl shadow-2xl ${
-          isDark ? "bg-slate-800" : "bg-white"
+        className={`w-full max-w-2xl rounded-3xl shadow-2xl border animate-slide-up ${
+          isDark ? "bg-slate-800 border-slate-700" : "bg-white border-white/20"
         }`}
       >
         {/* Modal Header */}
         <div
           className={`flex items-center justify-between p-6 border-b ${
-            isDark ? "border-slate-700" : "border-slate-200"
+            isDark ? "border-slate-700" : "border-slate-100"
           }`}
         >
           <h2
@@ -218,10 +218,10 @@ const CreateOfficeModal = ({
           </h2>
           <button
             onClick={handleClose}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-2 rounded-xl transition-colors ${
               isDark
-                ? "hover:bg-slate-700 text-slate-400"
-                : "hover:bg-slate-100 text-slate-600"
+                ? "hover:bg-slate-700 text-slate-400 hover:text-white"
+                : "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
             }`}
           >
             <FaTimes size={20} />
@@ -231,12 +231,12 @@ const CreateOfficeModal = ({
         {/* Modal Body */}
         <form
           onSubmit={handleSubmit}
-          className="p-6 space-y-5 max-h-[calc(100vh-200px)] overflow-y-auto"
+          className="p-8 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto"
         >
           {/* Company Name (Read-only) */}
           <div>
             <label
-              className={`block text-sm font-medium mb-2 ${
+              className={`block text-sm font-semibold mb-2 ${
                 isDark ? "text-slate-300" : "text-slate-700"
               }`}
             >
@@ -257,7 +257,7 @@ const CreateOfficeModal = ({
           {/* Office Name */}
           <div>
             <label
-              className={`block text-sm font-medium mb-2 ${
+              className={`block text-sm font-semibold mb-2 ${
                 isDark ? "text-slate-300" : "text-slate-700"
               }`}
             >
@@ -271,19 +271,19 @@ const CreateOfficeModal = ({
               placeholder="e.g., FPT HCM Office"
               className={`w-full px-4 py-3 rounded-xl border outline-none transition-all ${
                 isDark
-                  ? "bg-slate-900 border-slate-700 text-white placeholder-slate-500 focus:border-indigo-500"
+                  ? "bg-slate-900/50 border-slate-700 text-white placeholder-slate-500 focus:border-indigo-500"
                   : "bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
               } ${errors.officeName ? "border-red-500" : ""}`}
             />
             {errors.officeName && (
-              <p className="text-red-500 text-sm mt-1">{errors.officeName}</p>
+              <p className="text-red-500 text-sm mt-1 font-medium">{errors.officeName}</p>
             )}
           </div>
 
           {/* Address */}
           <div>
             <label
-              className={`block text-sm font-medium mb-2 ${
+              className={`block text-sm font-semibold mb-2 ${
                 isDark ? "text-slate-300" : "text-slate-700"
               }`}
             >
@@ -297,17 +297,19 @@ const CreateOfficeModal = ({
               rows="3"
               className={`w-full px-4 py-3 rounded-xl border outline-none transition-all resize-none ${
                 isDark
-                  ? "bg-slate-900 border-slate-700 text-white placeholder-slate-500 focus:border-indigo-500"
+                  ? "bg-slate-900/50 border-slate-700 text-white placeholder-slate-500 focus:border-indigo-500"
                   : "bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
               } ${errors.address ? "border-red-500" : ""}`}
             />
             {errors.address && (
-              <p className="text-red-500 text-sm mt-1">{errors.address}</p>
+              <p className="text-red-500 text-sm mt-1 font-medium">{errors.address}</p>
             )}
           </div>
 
           {/* Use My Email Checkbox */}
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+          <div className={`flex items-center gap-3 p-4 rounded-xl border ${
+            isDark ? "bg-indigo-500/10 border-indigo-500/20" : "bg-indigo-50 border-indigo-100"
+          }`}>
             <input
               type="checkbox"
               id="useMyEmail"
@@ -328,7 +330,7 @@ const CreateOfficeModal = ({
           {/* Manager Email */}
           <div>
             <label
-              className={`block text-sm font-medium mb-2 ${
+              className={`block text-sm font-semibold mb-2 ${
                 isDark ? "text-slate-300" : "text-slate-700"
               }`}
             >
@@ -343,21 +345,21 @@ const CreateOfficeModal = ({
               placeholder="manager@company.com"
               className={`w-full px-4 py-3 rounded-xl border outline-none transition-all ${
                 isDark
-                  ? "bg-slate-900 border-slate-700 text-white placeholder-slate-500 focus:border-indigo-500"
+                  ? "bg-slate-900/50 border-slate-700 text-white placeholder-slate-500 focus:border-indigo-500"
                   : "bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
               } ${errors.managerEmail ? "border-red-500" : ""} ${
                 useMyEmail ? "opacity-50 cursor-not-allowed" : ""
               }`}
             />
             {errors.managerEmail && (
-              <p className="text-red-500 text-sm mt-1">{errors.managerEmail}</p>
+              <p className="text-red-500 text-sm mt-1 font-medium">{errors.managerEmail}</p>
             )}
           </div>
 
           {/* Manager Name */}
           <div>
             <label
-              className={`block text-sm font-medium mb-2 ${
+              className={`block text-sm font-semibold mb-2 ${
                 isDark ? "text-slate-300" : "text-slate-700"
               }`}
             >
@@ -368,18 +370,15 @@ const CreateOfficeModal = ({
               name="managerName"
               value={formData.managerName}
               onChange={handleFormChange}
-              disabled={useMyEmail}
               placeholder="e.g., Nguyen Van A"
               className={`w-full px-4 py-3 rounded-xl border outline-none transition-all ${
                 isDark
-                  ? "bg-slate-900 border-slate-700 text-white placeholder-slate-500 focus:border-indigo-500"
+                  ? "bg-slate-900/50 border-slate-700 text-white placeholder-slate-500 focus:border-indigo-500"
                   : "bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-              } ${errors.managerName ? "border-red-500" : ""} ${
-                useMyEmail ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              } ${errors.managerName ? "border-red-500" : ""}`}
             />
             {errors.managerName && (
-              <p className="text-red-500 text-sm mt-1">{errors.managerName}</p>
+              <p className="text-red-500 text-sm mt-1 font-medium">{errors.managerName}</p>
             )}
           </div>
 
@@ -387,7 +386,7 @@ const CreateOfficeModal = ({
           <div>
             <div className="flex items-center justify-between mb-2">
               <label
-                className={`text-sm font-medium ${
+                className={`text-sm font-semibold ${
                   isDark ? "text-slate-300" : "text-slate-700"
                 }`}
               >
@@ -396,9 +395,9 @@ const CreateOfficeModal = ({
               <button
                 type="button"
                 onClick={handleGeneratePassword}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
               >
-                <FaKey size={12} />
+                <FaKey size={10} />
                 Generate
               </button>
             </div>
@@ -409,10 +408,9 @@ const CreateOfficeModal = ({
                 name="managerPassword"
                 value={formData.managerPassword}
                 onChange={handleFormChange}
-                placeholder="Leave empty to let Cognito generate"
                 className={`w-full px-4 py-3 pr-24 rounded-xl border outline-none transition-all ${
                   isDark
-                    ? "bg-slate-900 border-slate-700 text-white placeholder-slate-500 focus:border-indigo-500"
+                    ? "bg-slate-900/50 border-slate-700 text-white placeholder-slate-500 focus:border-indigo-500"
                     : "bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
                 } ${errors.managerPassword ? "border-red-500" : ""}`}
               />
@@ -423,8 +421,8 @@ const CreateOfficeModal = ({
                     onClick={handleCopyPassword}
                     className={`p-2 rounded-lg transition-colors ${
                       isDark
-                        ? "hover:bg-slate-700 text-slate-400"
-                        : "hover:bg-slate-200 text-slate-600"
+                        ? "hover:bg-slate-700 text-slate-400 hover:text-white"
+                        : "hover:bg-slate-200 text-slate-600 hover:text-slate-900"
                     }`}
                     title="Copy password"
                   >
@@ -436,8 +434,8 @@ const CreateOfficeModal = ({
                   onClick={() => setShowPassword(!showPassword)}
                   className={`p-2 rounded-lg transition-colors ${
                     isDark
-                      ? "hover:bg-slate-700 text-slate-400"
-                      : "hover:bg-slate-200 text-slate-600"
+                      ? "hover:bg-slate-700 text-slate-400 hover:text-white"
+                      : "hover:bg-slate-200 text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   {showPassword ? (
@@ -450,7 +448,7 @@ const CreateOfficeModal = ({
             </div>
 
             {errors.managerPassword && (
-              <p className="text-red-500 text-sm mt-1">
+              <p className="text-red-500 text-sm mt-1 font-medium">
                 {errors.managerPassword}
               </p>
             )}
@@ -461,25 +459,25 @@ const CreateOfficeModal = ({
               }`}
             >
               {useMyEmail
-                ? "Note: If using your own email, Cognito will not send a new password."
-                : "If left empty, Cognito will generate and send a temporary password via email."}
+                ? "Note: If using your own email, We will use for password for manager account."
+                : "If left empty, We will generate and send a temporary password via email."}
             </p>
           </div>
 
           {/* Error Message */}
           {errors.general && (
             <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-              <p className="text-red-500 text-sm">{errors.general}</p>
+              <p className="text-red-500 text-sm font-medium">{errors.general}</p>
             </div>
           )}
 
           {/* Modal Footer */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-4 pt-4">
             <button
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className={`flex-1 px-6 py-3 rounded-xl font-medium transition-colors ${
+              className={`flex-1 px-6 py-3.5 rounded-xl font-semibold transition-colors ${
                 isDark
                   ? "bg-slate-700 hover:bg-slate-600 text-white"
                   : "bg-slate-100 hover:bg-slate-200 text-slate-900"
@@ -490,7 +488,7 @@ const CreateOfficeModal = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5"
             >
               {isSubmitting ? (
                 <>

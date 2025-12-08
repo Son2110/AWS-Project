@@ -409,25 +409,32 @@ const apiService = {
   },
 
   // User APIs
-  updateProfile: async (profileData) => {
+  updateProfile: async (orgAlias, email, updates) => {
     try {
       const token = apiService.getAuthToken();
+
       const response = await fetch(
         `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PROFILE_UPDATE}`,
         {
-          method: "PUT",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(profileData),
+          body: JSON.stringify({
+            orgAlias,
+            email,
+            updates,
+          }),
         }
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to update profile");
+        throw new Error(
+          data.message || data.error || "Failed to update profile"
+        );
       }
 
       return data;
@@ -481,7 +488,14 @@ const apiService = {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+
+      // Store IoT endpoint if available
+      if (data.iotEndpoint) {
+        localStorage.setItem("iotEndpoint", data.iotEndpoint);
+      }
+
+      return data;
     } catch (error) {
       console.error("Error fetching rooms by office:", error);
       throw error;
@@ -598,30 +612,30 @@ const apiService = {
     }
   },
 
-  // Logs APIs
-  getLogs: async (filters = {}) => {
+  deleteRoomConfig: async (roomId, officeId, thingName) => {
     try {
       const token = apiService.getAuthToken();
-      const queryParams = new URLSearchParams(filters).toString();
-      const url = queryParams
-        ? `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.LOGS}?${queryParams}`
-        : `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.LOGS}`;
+      const response = await fetch(
+        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.DELETE_ROOM_CONFIG}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ roomId, officeId, thingName }),
+        }
+      );
 
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(data.message || "Failed to delete room config");
       }
 
-      return await response.json();
+      return data;
     } catch (error) {
-      console.error("Error fetching logs:", error);
+      console.error("Error deleting room config:", error);
       throw error;
     }
   },

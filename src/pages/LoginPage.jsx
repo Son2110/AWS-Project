@@ -126,7 +126,6 @@ const LoginPage = () => {
             localStorage.setItem("userRole", "admin"); // Use selected role
             localStorage.setItem("officeId", userInfo.officeId || "");
             localStorage.setItem("orgAlias", userInfo.orgAlias || "");
-            localStorage.setItem("companyId", userInfo.companyId || "");
             localStorage.setItem("userGroups", JSON.stringify(userGroups));
             localStorage.setItem("isAuthenticated", "true");
 

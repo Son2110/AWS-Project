@@ -89,12 +89,27 @@ const Navbar = ({ userName = "User" }) => {
     setIsUpdating(true);
 
     try {
-      const userId = localStorage.getItem("userId");
+      const orgAlias = localStorage.getItem("orgAlias");
+      const currentEmail = localStorage.getItem("userEmail");
+      const userRole = localStorage.getItem("userRole");
 
-      await apiService.updateUserProfile(userId, {
+      // Only Admin can update profile
+      if (userRole !== "admin") {
+        setToast({
+          show: true,
+          message: "Only Admin users can update their profile",
+          type: "error",
+        });
+        setIsUpdating(false);
+        return;
+      }
+
+      const updates = {
         name: profileData.name,
         email: profileData.email,
-      });
+      };
+
+      await apiService.updateProfile(orgAlias, currentEmail, updates);
 
       localStorage.setItem("userName", profileData.name);
       localStorage.setItem("userEmail", profileData.email);
@@ -113,7 +128,7 @@ const Navbar = ({ userName = "User" }) => {
       console.error("Update profile error:", error);
       setToast({
         show: true,
-        message: "Failed to update profile. Please try again.",
+        message: error.message || "Failed to update profile. Please try again.",
         type: "error",
       });
     } finally {
@@ -232,17 +247,20 @@ const Navbar = ({ userName = "User" }) => {
                     </p>
                   </div>
                   <div className="p-2">
-                    <button
-                      onClick={handleOpenProfileModal}
-                      className={`w-full px-3 py-2 text-left flex items-center gap-3 rounded-lg transition-colors ${
-                        isDark
-                          ? "hover:bg-slate-700 text-slate-300"
-                          : "hover:bg-slate-50 text-slate-700"
-                      }`}
-                    >
-                      <FaCog className="text-slate-400" />
-                      <span>Manage account</span>
-                    </button>
+                    {/* Only show Manage account for Admin */}
+                    {userRole === "admin" && (
+                      <button
+                        onClick={handleOpenProfileModal}
+                        className={`w-full px-3 py-2 text-left flex items-center gap-3 rounded-lg transition-colors ${
+                          isDark
+                            ? "hover:bg-slate-700 text-slate-300"
+                            : "hover:bg-slate-50 text-slate-700"
+                        }`}
+                      >
+                        <FaCog className="text-slate-400" />
+                        <span>Manage account</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         setShowProfileDropdown(false);
@@ -319,14 +337,17 @@ const Navbar = ({ userName = "User" }) => {
                 </div>
               </div>
 
-              <button
-                onClick={handleOpenProfileModal}
-                className={`flex items-center gap-3 px-4 py-2 ${
-                  isDark ? "text-slate-300" : "text-slate-600"
-                }`}
-              >
-                <FaCog /> Manage Account
-              </button>
+              {/* Only show Manage account for Admin */}
+              {userRole === "admin" && (
+                <button
+                  onClick={handleOpenProfileModal}
+                  className={`flex items-center gap-3 px-4 py-2 ${
+                    isDark ? "text-slate-300" : "text-slate-600"
+                  }`}
+                >
+                  <FaCog /> Manage Account
+                </button>
+              )}
 
               <button
                 onClick={() => {

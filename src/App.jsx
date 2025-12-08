@@ -13,38 +13,29 @@ import DashboardPage from "./pages/DashboardPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import OfficeDetailPage from "./pages/OfficeDetailPage";
 import RoomDetailPage from "./pages/RoomDetailPage";
-import ManagerManagementPage from "./pages/ManagerManagementPage";
-import ActivityLogsPage from "./pages/ActivityLogsPage";
-
-// Protected Route Component
-const ProtectedRoute = ({ children, requiredGroup }) => {
-  const isAuthenticated = localStorage.getItem("isAuthenticated");
-  const userGroups = JSON.parse(localStorage.getItem("userGroups") || "[]");
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (requiredGroup && !userGroups.includes(requiredGroup)) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return children;
-};
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import LandingRedirect from "./components/auth/LandingRedirect";
 
 function App() {
   return (
     <ThemeProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          <Route
+            path="/"
+            element={
+              <LandingRedirect>
+                <LandingPage />
+              </LandingRedirect>
+            }
+          />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route
             path="/admin"
             element={
-              <ProtectedRoute requiredGroup="Admin">
+              <ProtectedRoute requiredRole="admin">
                 <AdminDashboardPage />
               </ProtectedRoute>
             }
@@ -52,7 +43,7 @@ function App() {
           <Route
             path="/office/:officeId"
             element={
-              <ProtectedRoute requiredGroup="Admin">
+              <ProtectedRoute requiredRole="admin">
                 <OfficeDetailPage />
               </ProtectedRoute>
             }
@@ -70,22 +61,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <RoomDetailPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/managers"
-            element={
-              <ProtectedRoute requiredGroup="Admin">
-                <ManagerManagementPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/activity-logs"
-            element={
-              <ProtectedRoute requiredGroup="Admin">
-                <ActivityLogsPage />
               </ProtectedRoute>
             }
           />

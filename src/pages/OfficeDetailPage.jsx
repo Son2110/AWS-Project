@@ -12,6 +12,8 @@ import {
   FaTimesCircle,
   FaEdit,
   FaTrash,
+  FaDoorOpen,
+  FaArrowRight,
 } from "react-icons/fa";
 import { useTheme } from "../context/ThemeContext";
 import Navbar from "../components/layout/Navbar";
@@ -32,8 +34,11 @@ const OfficeDetailPage = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
+  const [roomCount, setRoomCount] = useState(0);
+  const [isAdminAlsoManager, setIsAdminAlsoManager] = useState(false);
 
   const orgAlias = localStorage.getItem("orgAlias") || "";
+  const currentUserEmail = localStorage.getItem("userEmail") || "";
 
   useEffect(() => {
     const fetchOfficeDetail = async () => {
@@ -46,6 +51,20 @@ const OfficeDetailPage = () => {
       try {
         const data = await apiService.getOfficeDetail(orgAlias, officeId);
         setOffice(data);
+
+        // Check if current admin is also the manager of this office
+        if (data.manager && data.manager.managerEmail === currentUserEmail) {
+          setIsAdminAlsoManager(true);
+        }
+
+        // Fetch room count
+        try {
+          const roomData = await apiService.getRoomsByOffice(officeId);
+          setRoomCount(roomData.roomCount || 0);
+        } catch (roomErr) {
+          console.error("Failed to fetch room count:", roomErr);
+          setRoomCount(0);
+        }
       } catch (err) {
         console.error("Failed to fetch office detail:", err);
         setError(err.message || "Failed to load office details");
@@ -380,7 +399,7 @@ const OfficeDetailPage = () => {
                   }`}
                 >
                   <div className="flex items-center gap-3 mb-2">
-                    <FaUserShield
+                    <FaDoorOpen
                       className={isDark ? "text-indigo-400" : "text-indigo-600"}
                     />
                     <span
@@ -388,7 +407,7 @@ const OfficeDetailPage = () => {
                         isDark ? "text-slate-400" : "text-slate-600"
                       }`}
                     >
-                      Role
+                      Total Rooms
                     </span>
                   </div>
                   <p
@@ -396,39 +415,58 @@ const OfficeDetailPage = () => {
                       isDark ? "text-white" : "text-slate-900"
                     }`}
                   >
-                    {office.manager.managerRole}
+                    {roomCount}
                   </p>
                 </div>
 
-                <div
-                  className={`p-4 rounded-xl ${
-                    isDark ? "bg-slate-700/50" : "bg-slate-50"
-                  }`}
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    {office.manager.managerStatus === "ACTIVE" ? (
-                      <FaCheckCircle className="text-emerald-500" />
-                    ) : (
-                      <FaTimesCircle className="text-red-500" />
-                    )}
-                    <span
-                      className={`text-sm font-medium ${
-                        isDark ? "text-slate-400" : "text-slate-600"
-                      }`}
-                    >
-                      Status
-                    </span>
-                  </div>
-                  <p
-                    className={`text-lg font-semibold ${
-                      office.manager.managerStatus === "ACTIVE"
-                        ? "text-emerald-500"
-                        : "text-red-500"
+                {/* Manager Dashboard Button (Only if admin is also manager) */}
+                {isAdminAlsoManager && (
+                  <button
+                    onClick={() => {
+                      localStorage.setItem("officeId", officeId);
+                      localStorage.setItem("officeName", office.name);
+                      navigate("/dashboard");
+                    }}
+                    className={`p-4 rounded-xl transition-all duration-200 flex items-center justify-between group ${
+                      isDark
+                        ? "bg-gradient-to-r from-indigo-900/30 to-violet-900/30 hover:from-indigo-900/50 hover:to-violet-900/50 border border-indigo-700/50"
+                        : "bg-gradient-to-r from-indigo-50 to-violet-50 hover:from-indigo-100 hover:to-violet-100 border border-indigo-200"
                     }`}
                   >
-                    {office.manager.managerStatus}
-                  </p>
-                </div>
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          isDark
+                            ? "bg-indigo-600 text-white"
+                            : "bg-indigo-600 text-white"
+                        }`}
+                      >
+                        <FaUserShield size={18} />
+                      </div>
+                      <div className="text-left">
+                        <p
+                          className={`text-sm font-medium ${
+                            isDark ? "text-slate-400" : "text-slate-600"
+                          }`}
+                        >
+                          You are the Manager
+                        </p>
+                        <p
+                          className={`text-base font-semibold ${
+                            isDark ? "text-white" : "text-slate-900"
+                          }`}
+                        >
+                          Switch to Dashboard
+                        </p>
+                      </div>
+                    </div>
+                    <FaArrowRight
+                      className={`transform group-hover:translate-x-1 transition-transform ${
+                        isDark ? "text-indigo-400" : "text-indigo-600"
+                      }`}
+                    />
+                  </button>
+                )}
               </div>
             </div>
           ) : (
