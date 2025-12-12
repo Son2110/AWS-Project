@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { FaEye, FaEyeSlash, FaMoon, FaSun } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { FaEye, FaEyeSlash, FaArrowLeft } from "react-icons/fa";
+import { useNavigate, Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import ThemeToggle from "../components/layout/ThemeToggle";
+import apiService from "../services/apiService";
 
-//helper
 const parseJwt = (token) => {
   try {
     return JSON.parse(atob(token.split(".")[1]));
@@ -14,14 +15,40 @@ const parseJwt = (token) => {
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark } = useTheme();
+  const [selectedRole, setSelectedRole] = useState(""); // "admin" or "manager"
+  const [showLoginForm, setShowLoginForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
+    companyName: "",
     email: "",
     password: "",
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // For NEW_PASSWORD_REQUIRED challenge
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [challengeSession, setChallengeSession] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const handleRoleSelect = (role) => {
+    setSelectedRole(role);
+    setShowLoginForm(true);
+    setErrors({});
+  };
+
+  const handleBackToRoleSelection = () => {
+    setShowLoginForm(false);
+    setSelectedRole("");
+    setFormData({
+      companyName: "",
+      email: "",
+      password: "",
+    });
+    setErrors({});
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -29,7 +56,6 @@ const LoginPage = () => {
       ...prev,
       [name]: value,
     }));
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -40,6 +66,10 @@ const LoginPage = () => {
 
   const validateForm = () => {
     const newErrors = {};
+
+    if (!formData.companyName.trim()) {
+      newErrors.companyName = "Company Name is required";
+    }
 
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
@@ -63,74 +93,87 @@ const LoginPage = () => {
     if (Object.keys(newErrors).length === 0) {
       setIsLoading(true);
       setErrors({});
-      const API_URL = `${import.meta.env.VITE_API_BASE_URL}/login`;
       try {
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: formData.email,
-            password: formData.password,
-          }),
-        });
+        const loginResult = await apiService.login(
+          formData.email,
+          formData.password,
+          formData.companyName
+        );
 
-        const responseData = await response.json();
+        // Check if challenge is required (NEW_PASSWORD_REQUIRED)
+        if (loginResult.challengeName === "NEW_PASSWORD_REQUIRED") {
+          setChallengeSession(loginResult.session);
+          setShowChangePassword(true);
+          setIsLoading(false);
+          return;
+        }
 
-        console.log("Response status:", response.status);
-        console.log("Response data:", responseData);
+        const idTokenData = parseJwt(loginResult.id_token);
+        const userGroups = idTokenData["cognito:groups"] || [];
+        const userInfo = loginResult.user || {};
 
-        // Check if response is not ok (HTTP error)
-        if (!response.ok) {
-          // Handle different response formats
-          let errorMessage = "Invalid email or password.";
+        // Check if backend role matches selected role
+        if (selectedRole === "admin") {
+          // User selected Admin role
+          if (userInfo.role === "admin") {
+            // Save to localStorage with admin role
+            localStorage.setItem("access_token", loginResult.access_token);
+            localStorage.setItem("id_token", loginResult.id_token);
+            localStorage.setItem("refresh_token", loginResult.refresh_token);
+            localStorage.setItem("userId", userInfo.userId || "");
+            localStorage.setItem("userEmail", userInfo.email || "");
+            localStorage.setItem("userName", userInfo.name || "");
+            localStorage.setItem("userRole", "admin"); // Use selected role
+            localStorage.setItem("officeId", userInfo.officeId || "");
+            localStorage.setItem("orgAlias", userInfo.orgAlias || "");
+            localStorage.setItem("userGroups", JSON.stringify(userGroups));
+            localStorage.setItem("isAuthenticated", "true");
 
-          if (responseData.body) {
-            // Lambda Proxy format: {statusCode, body: "stringified json"}
-            const errorBody = JSON.parse(responseData.body);
-            errorMessage = errorBody.message || errorMessage;
-          } else if (responseData.message) {
-            // Direct format: {message, ...}
-            errorMessage = responseData.message;
-          }
-
-          setErrors({ general: errorMessage });
-        } else {
-          // Login successful - handle different response formats
-          let loginResult;
-
-          if (responseData.body) {
-            // Lambda Proxy format: {statusCode: 200, body: "stringified json"}
-            loginResult = JSON.parse(responseData.body);
+            navigate("/admin");
           } else {
-            // Direct format: {message, access_token, ...}
-            loginResult = responseData;
+            setErrors({
+              general: "You do not have admin privileges for this account.",
+            });
           }
+        } else if (selectedRole === "manager") {
+          // User selected Manager role
+          // Check if user has Manager group AND has assigned office
+          const hasManagerGroup = userGroups.includes("Manager");
 
-          // Parse ID token to get user info
-          const idTokenData = parseJwt(loginResult.id_token);
-          const userGroups = idTokenData["cognito:groups"] || [];
+          if (!hasManagerGroup) {
+            setErrors({
+              general: "You do not have manager privileges for this account.",
+            });
+          } else if (!userInfo.hasOffice || !userInfo.officeId) {
+            setErrors({
+              general:
+                "No office assigned yet. Please contact your administrator.",
+            });
+          } else {
+            // Save to localStorage with manager role
+            localStorage.setItem("access_token", loginResult.access_token);
+            localStorage.setItem("id_token", loginResult.id_token);
+            localStorage.setItem("refresh_token", loginResult.refresh_token);
+            localStorage.setItem("userId", userInfo.userId || "");
+            localStorage.setItem("userEmail", userInfo.email || "");
+            localStorage.setItem("userName", userInfo.name || "");
+            localStorage.setItem("userRole", "manager");
+            localStorage.setItem("officeId", userInfo.officeId || "");
+            localStorage.setItem("orgAlias", userInfo.orgAlias || "");
+            localStorage.setItem("userGroups", JSON.stringify(userGroups));
+            localStorage.setItem("isAuthenticated", "true");
 
-          // Store tokens and user info
-          localStorage.setItem("access_token", loginResult.access_token);
-          localStorage.setItem("id_token", loginResult.id_token);
-          localStorage.setItem("refresh_token", loginResult.refresh_token);
-          localStorage.setItem("userEmail", idTokenData.email);
-          localStorage.setItem(
-            "userName",
-            idTokenData.name || idTokenData.email
-          );
-          localStorage.setItem("userGroups", JSON.stringify(userGroups));
-          localStorage.setItem("isAuthenticated", "true");
-
-          console.log("Login successful, redirecting to dashboard...");
-          navigate("/dashboard");
+            navigate("/dashboard");
+          }
+        } else {
+          setErrors({
+            general: "Please select a role to login.",
+          });
         }
       } catch (error) {
         console.error("Login error:", error);
         setErrors({
-          general: "Login failed. Please try again.",
+          general: error.message || "Login failed. Please try again.",
         });
       } finally {
         setIsLoading(false);
@@ -140,261 +183,610 @@ const LoginPage = () => {
     }
   };
 
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+
+    // Validate new password
+    if (!newPassword || newPassword.length < 8) {
+      setErrors({ newPassword: "Password must be at least 8 characters" });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrors({ confirmPassword: "Passwords do not match" });
+      return;
+    }
+
+    setIsLoading(true);
+    setErrors({});
+
+    try {
+      const result = await apiService.changeTemporaryPassword(
+        formData.email,
+        newPassword,
+        challengeSession
+      );
+
+      // Password changed successfully, now complete login
+      const idTokenData = parseJwt(result.id_token);
+      const userGroups = idTokenData["cognito:groups"] || [];
+      const userInfo = result.user || {};
+
+      // Save to localStorage based on selected role
+      if (selectedRole === "admin") {
+        localStorage.setItem("access_token", result.access_token);
+        localStorage.setItem("id_token", result.id_token);
+        localStorage.setItem("refresh_token", result.refresh_token);
+        localStorage.setItem("userId", userInfo.userId || "");
+        localStorage.setItem("userEmail", userInfo.email || "");
+        localStorage.setItem("userName", userInfo.name || "");
+        localStorage.setItem("userRole", "admin");
+        localStorage.setItem("officeId", userInfo.officeId || "");
+        localStorage.setItem("orgAlias", formData.companyName || "");
+        localStorage.setItem("userGroups", JSON.stringify(userGroups));
+        localStorage.setItem("isAuthenticated", "true");
+        navigate("/admin");
+      } else {
+        localStorage.setItem("access_token", result.access_token);
+        localStorage.setItem("id_token", result.id_token);
+        localStorage.setItem("refresh_token", result.refresh_token);
+        localStorage.setItem("userId", userInfo.userId || "");
+        localStorage.setItem("userEmail", userInfo.email || "");
+        localStorage.setItem("userName", userInfo.name || "");
+        localStorage.setItem("userRole", "manager");
+        localStorage.setItem("officeId", userInfo.officeId || "");
+        localStorage.setItem("orgAlias", formData.companyName || "");
+        localStorage.setItem("userGroups", JSON.stringify(userGroups));
+        localStorage.setItem("isAuthenticated", "true");
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      console.error("Change password error:", error);
+      setErrors({
+        general:
+          error.message || "Failed to change password. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 transition-colors duration-300"
-      style={{
-        background: isDark
-          ? "linear-gradient(to bottom right, rgb(17, 24, 39), rgb(31, 41, 55), rgb(0, 0, 0))"
-          : "linear-gradient(to bottom right, rgb(6, 182, 212), rgb(37, 99, 235), rgb(67, 56, 202))",
-      }}
+      className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-300 relative overflow-hidden ${
+        isDark ? "bg-slate-900" : "bg-slate-50"
+      }`}
     >
-      <div className="w-full max-w-md">
-        {/* Theme Toggle Button */}
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={toggleTheme}
-            className="p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
-            style={{
-              backgroundColor: isDark
-                ? "rgb(55, 65, 81)"
-                : "rgb(255, 255, 255)",
-              color: isDark ? "rgb(252, 211, 77)" : "rgb(75, 85, 99)",
-            }}
-            aria-label="Toggle theme"
+      {/* Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+        <div
+          className={`absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full blur-3xl ${
+            isDark ? "bg-indigo-900/20" : "bg-indigo-100/50"
+          }`}
+        ></div>
+        <div
+          className={`absolute top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full blur-3xl ${
+            isDark ? "bg-violet-900/20" : "bg-violet-100/50"
+          }`}
+        ></div>
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        {/* Header Actions */}
+        <div className="flex justify-between items-center mb-8">
+          <Link
+            to="/"
+            className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+              isDark
+                ? "text-slate-400 hover:text-white"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
           >
-            {isDark ? (
-              <FaSun className="text-xl" />
-            ) : (
-              <FaMoon className="text-xl" />
-            )}
-          </button>
+            <FaArrowLeft /> Back to Home
+          </Link>
+          <ThemeToggle />
         </div>
 
         {/* Login Card */}
         <div
-          className="rounded-2xl shadow-2xl p-8 transition-colors duration-300"
-          style={{
-            backgroundColor: isDark ? "rgb(31, 41, 55)" : "rgb(255, 255, 255)",
-          }}
+          className={`rounded-3xl shadow-2xl p-8 md:p-10 backdrop-blur-xl border transition-all duration-300 ${
+            isDark
+              ? "bg-slate-800/50 border-slate-700"
+              : "bg-white/70 border-white/50"
+          }`}
         >
           {/* Logo */}
-          <div className="text-center mb-6">
-            <div
-              className="inline-block p-3 rounded-full mb-4 transition-colors duration-300"
-              style={{
-                backgroundColor: isDark
-                  ? "rgb(30, 58, 138)"
-                  : "rgb(219, 234, 254)",
-              }}
-            >
-              <svg
-                className="w-12 h-12 transition-colors duration-300"
-                style={{
-                  color: isDark ? "rgb(147, 197, 253)" : "rgb(37, 99, 235)",
-                }}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                />
-              </svg>
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/30">
+              <img
+                src="/smart-office-icon.svg"
+                alt="Logo"
+                className="w-10 h-10 brightness-0 invert"
+              />
             </div>
             <h1
-              className="text-3xl font-bold mb-2 transition-colors duration-300"
-              style={{
-                color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-              }}
+              className={`text-3xl font-bold mb-2 ${
+                isDark ? "text-white" : "text-slate-900"
+              }`}
             >
-              Smart Office
+              Welcome Back
             </h1>
-            <p
-              className="transition-colors duration-300"
-              style={{
-                color: isDark ? "rgb(209, 213, 219)" : "rgb(75, 85, 99)",
-              }}
-            >
-              Welcome to Dashboard
+            <p className={`${isDark ? "text-slate-400" : "text-slate-500"}`}>
+              Sign in to access your dashboard
             </p>
           </div>
 
           {/* Error Message */}
           {errors.general && (
             <div
-              className="mb-4 p-3 border rounded-lg transition-colors duration-300"
-              style={{
-                backgroundColor: isDark
-                  ? "rgba(127, 29, 29, 0.3)"
-                  : "rgb(254, 242, 242)",
-                borderColor: isDark ? "rgb(153, 27, 27)" : "rgb(254, 202, 202)",
-              }}
+              className={`mb-6 p-4 rounded-xl border flex items-center justify-center text-sm font-medium ${
+                isDark
+                  ? "bg-red-900/20 border-red-800 text-red-300"
+                  : "bg-red-50 border-red-100 text-red-600"
+              }`}
             >
-              <p
-                className="text-sm text-center transition-colors duration-300"
-                style={{
-                  color: isDark ? "rgb(252, 165, 165)" : "rgb(220, 38, 38)",
-                }}
-              >
-                {errors.general}
-              </p>
+              {errors.general}
             </div>
           )}
 
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email Field */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium mb-2 transition-colors duration-300"
-                style={{
-                  color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                }}
-              >
-                Email
-              </label>
-              <input
-                type="text"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                style={{
-                  backgroundColor: isDark
-                    ? "rgb(55, 65, 81)"
-                    : "rgb(255, 255, 255)",
-                  color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                  borderColor: errors.email
-                    ? isDark
-                      ? "rgb(239, 68, 68)"
-                      : "rgb(239, 68, 68)"
-                    : isDark
-                    ? "rgb(75, 85, 99)"
-                    : "rgb(209, 213, 219)",
-                }}
-                placeholder="Enter your email"
-                disabled={isLoading}
-              />
-              {errors.email && (
+          {/* Role Selection or Login Form */}
+          {!showLoginForm ? (
+            /* Role Selection */
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <h2
+                  className={`text-xl font-bold mb-2 ${
+                    isDark ? "text-white" : "text-slate-900"
+                  }`}
+                >
+                  Select Login Role
+                </h2>
                 <p
-                  className="mt-1 text-sm transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(252, 165, 165)" : "rgb(239, 68, 68)",
-                  }}
+                  className={`text-sm ${
+                    isDark ? "text-slate-400" : "text-slate-600"
+                  }`}
                 >
-                  {errors.email}
+                  Choose your role to continue
                 </p>
-              )}
-            </div>
+              </div>
 
-            {/* Password Field */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium mb-2 transition-colors duration-300"
-                style={{
-                  color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                }}
-              >
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all pr-12"
-                  style={{
-                    backgroundColor: isDark
-                      ? "rgb(55, 65, 81)"
-                      : "rgb(255, 255, 255)",
-                    color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                    borderColor: errors.password
-                      ? isDark
-                        ? "rgb(239, 68, 68)"
-                        : "rgb(239, 68, 68)"
-                      : isDark
-                      ? "rgb(75, 85, 99)"
-                      : "rgb(209, 213, 219)",
-                  }}
-                  placeholder="Enter your password"
-                  disabled={isLoading}
-                />
+              <div className="grid grid-cols-1 gap-4">
+                {/* Admin Login Button */}
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-                  style={{
-                    color: isDark ? "rgb(156, 163, 175)" : "rgb(107, 114, 128)",
-                  }}
-                  disabled={isLoading}
+                  onClick={() => handleRoleSelect("admin")}
+                  className={`group p-6 rounded-2xl border-2 transition-all duration-200 text-left hover:scale-[1.02] ${
+                    isDark
+                      ? "bg-slate-900/50 border-indigo-600 hover:bg-indigo-900/30 hover:border-indigo-500"
+                      : "bg-white border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50"
+                  }`}
                 >
-                  {showPassword ? (
-                    <FaEyeSlash size={20} />
-                  ) : (
-                    <FaEye size={20} />
-                  )}
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                      A
+                    </div>
+                    <div className="flex-1">
+                      <h3
+                        className={`font-bold text-lg mb-1 ${
+                          isDark ? "text-white" : "text-slate-900"
+                        }`}
+                      >
+                        Login as Admin
+                      </h3>
+                      <p
+                        className={`text-sm ${
+                          isDark ? "text-slate-400" : "text-slate-600"
+                        }`}
+                      >
+                        Manage offices, rooms, and users
+                      </p>
+                    </div>
+                    <svg
+                      className={`w-6 h-6 transition-transform group-hover:translate-x-1 ${
+                        isDark ? "text-slate-400" : "text-slate-500"
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </div>
+                </button>
+
+                {/* Manager Login Button */}
+                <button
+                  onClick={() => handleRoleSelect("manager")}
+                  className={`group p-6 rounded-2xl border-2 transition-all duration-200 text-left hover:scale-[1.02] ${
+                    isDark
+                      ? "bg-slate-900/50 border-emerald-600 hover:bg-emerald-900/30 hover:border-emerald-500"
+                      : "bg-white border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                      M
+                    </div>
+                    <div className="flex-1">
+                      <h3
+                        className={`font-bold text-lg mb-1 ${
+                          isDark ? "text-white" : "text-slate-900"
+                        }`}
+                      >
+                        Login as Manager
+                      </h3>
+                      <p
+                        className={`text-sm ${
+                          isDark ? "text-slate-400" : "text-slate-600"
+                        }`}
+                      >
+                        Access your office dashboard
+                      </p>
+                    </div>
+                    <svg
+                      className={`w-6 h-6 transition-transform group-hover:translate-x-1 ${
+                        isDark ? "text-slate-400" : "text-slate-500"
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </div>
                 </button>
               </div>
-              {errors.password && (
-                <p
-                  className="mt-1 text-sm transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(252, 165, 165)" : "rgb(239, 68, 68)",
-                  }}
-                >
-                  {errors.password}
-                </p>
-              )}
-            </div>
 
-            {/* Forgot Password Link */}
-            <div className="text-right">
+              {/* Sign Up Link */}
+              <div className="text-center pt-4">
+                <p
+                  className={`text-sm ${
+                    isDark ? "text-slate-400" : "text-slate-600"
+                  }`}
+                >
+                  Don't have an account?{" "}
+                  <Link
+                    to="/signup"
+                    className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors"
+                  >
+                    Sign Up
+                  </Link>
+                </p>
+              </div>
+            </div>
+          ) : (
+            /* Login Form */
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Company Name Field */}
+              <div>
+                <label
+                  htmlFor="companyName"
+                  className={`block text-sm font-medium mb-2 ${
+                    isDark ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
+                  Company Name
+                </label>
+                <input
+                  type="text"
+                  id="companyName"
+                  name="companyName"
+                  value={formData.companyName}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 rounded-xl border-2 outline-none transition-all duration-200 ${
+                    errors.companyName
+                      ? "border-red-500 focus:border-red-500"
+                      : isDark
+                      ? "bg-slate-900/50 border-slate-700 focus:border-indigo-500 text-white placeholder-slate-500"
+                      : "bg-white border-slate-200 focus:border-indigo-500 text-slate-900 placeholder-slate-400"
+                  }`}
+                  placeholder="Enter your company name"
+                  disabled={isLoading}
+                />
+                {errors.companyName && (
+                  <p className="mt-1 text-sm text-red-500 font-medium">
+                    {errors.companyName}
+                  </p>
+                )}
+              </div>
+
+              {/* Email Field */}
+              <div>
+                <label
+                  htmlFor="email"
+                  className={`block text-sm font-medium mb-2 ${
+                    isDark ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
+                  Email Address
+                </label>
+                <input
+                  type="text"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 rounded-xl border-2 outline-none transition-all duration-200 ${
+                    errors.email
+                      ? "border-red-500 focus:border-red-500"
+                      : isDark
+                      ? "bg-slate-900/50 border-slate-700 focus:border-indigo-500 text-white placeholder-slate-500"
+                      : "bg-white border-slate-200 focus:border-indigo-500 text-slate-900 placeholder-slate-400"
+                  }`}
+                  placeholder="name@company.com"
+                  disabled={isLoading}
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-500 font-medium">
+                    {errors.email}
+                  </p>
+                )}
+              </div>
+
+              {/* Password Field */}
+              <div>
+                <label
+                  htmlFor="password"
+                  className={`block text-sm font-medium mb-2 ${
+                    isDark ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 rounded-xl border-2 outline-none transition-all duration-200 pr-12 ${
+                      errors.password
+                        ? "border-red-500 focus:border-red-500"
+                        : isDark
+                        ? "bg-slate-900/50 border-slate-700 focus:border-indigo-500 text-white placeholder-slate-500"
+                        : "bg-white border-slate-200 focus:border-indigo-500 text-slate-900 placeholder-slate-400"
+                    }`}
+                    placeholder="••••••••"
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors ${
+                      isDark
+                        ? "text-slate-500 hover:text-slate-300"
+                        : "text-slate-400 hover:text-slate-600"
+                    }`}
+                    disabled={isLoading}
+                  >
+                    {showPassword ? (
+                      <FaEyeSlash size={20} />
+                    ) : (
+                      <FaEye size={20} />
+                    )}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-500 font-medium">
+                    {errors.password}
+                  </p>
+                )}
+              </div>
+
+              {/* Forgot Password Link */}
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => navigate("/forgot-password")}
+                  className="text-sm font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Signing in...
+                  </span>
+                ) : (
+                  "Sign In"
+                )}
+              </button>
+
+              {/* Back Button */}
               <button
                 type="button"
-                onClick={() => navigate("/forgot-password")}
-                className="text-sm font-medium transition-colors duration-300 hover:underline"
-                style={{
-                  color: isDark ? "rgb(147, 197, 253)" : "rgb(37, 99, 235)",
-                }}
+                onClick={handleBackToRoleSelection}
+                className={`w-full py-3 rounded-xl font-medium transition-colors ${
+                  isDark
+                    ? "text-slate-400 hover:text-white hover:bg-slate-700/50"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                }`}
               >
-                Forgot Password?
+                ← Back to Role Selection
               </button>
-            </div>
+            </form>
+          )}
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              style={{
-                background: isDark
-                  ? "linear-gradient(to right, rgb(29, 78, 216), rgb(67, 56, 202))"
-                  : "linear-gradient(to right, rgb(37, 99, 235), rgb(79, 70, 229))",
-                color: "rgb(255, 255, 255)",
-              }}
-            >
-              {isLoading ? "Signing in..." : "Sign In"}
-            </button>
-          </form>
+          {/* Change Password Form (NEW_PASSWORD_REQUIRED) */}
+          {showChangePassword && (
+            <form onSubmit={handleChangePassword} className="space-y-6">
+              <div className="text-center mb-6">
+                <h3
+                  className={`text-2xl font-bold mb-2 ${
+                    isDark ? "text-white" : "text-slate-900"
+                  }`}
+                >
+                  Change Your Password
+                </h3>
+                <p
+                  className={`text-sm ${
+                    isDark ? "text-slate-400" : "text-slate-600"
+                  }`}
+                >
+                  You must change your temporary password before continuing
+                </p>
+              </div>
+
+              {/* New Password */}
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    isDark ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
+                  New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password (min 8 characters)"
+                    className={`w-full px-4 py-3 rounded-xl border outline-none transition-all ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-white placeholder-slate-500 focus:border-indigo-500"
+                        : "bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                    } ${errors.newPassword ? "border-red-500" : ""}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${
+                      isDark ? "text-slate-400" : "text-slate-600"
+                    }`}
+                  >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+                {errors.newPassword && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.newPassword}
+                  </p>
+                )}
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    isDark ? "text-slate-300" : "text-slate-700"
+                  }`}
+                >
+                  Confirm Password
+                </label>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter new password"
+                  className={`w-full px-4 py-3 rounded-xl border outline-none transition-all ${
+                    isDark
+                      ? "bg-slate-800 border-slate-700 text-white placeholder-slate-500 focus:border-indigo-500"
+                      : "bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                  } ${errors.confirmPassword ? "border-red-500" : ""}`}
+                />
+                {errors.confirmPassword && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.confirmPassword}
+                  </p>
+                )}
+              </div>
+
+              {/* Error Message */}
+              {errors.general && (
+                <div
+                  className={`p-4 rounded-xl ${
+                    isDark
+                      ? "bg-red-500/10 border border-red-500/20"
+                      : "bg-red-50 border border-red-200"
+                  }`}
+                >
+                  <p className="text-red-500 text-sm">{errors.general}</p>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Changing Password...
+                  </span>
+                ) : (
+                  "Change Password & Continue"
+                )}
+              </button>
+            </form>
+          )}
         </div>
 
         {/* Footer */}
         <div
-          className="mt-6 text-center text-sm transition-colors duration-300"
-          style={{
-            color: isDark ? "rgb(209, 213, 219)" : "rgb(255, 255, 255)",
-          }}
+          className={`mt-8 text-center text-sm ${
+            isDark ? "text-slate-500" : "text-slate-400"
+          }`}
         >
-          <p>© 2025 Smart Office. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} SmartOffice IoT Solutions.</p>
         </div>
       </div>
     </div>

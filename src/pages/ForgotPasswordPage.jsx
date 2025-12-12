@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { FaArrowLeft, FaEye, FaEyeSlash } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import ThemeToggle from "../components/layout/ThemeToggle";
+import apiService from "../services/apiService";
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
@@ -71,37 +73,14 @@ const ForgotPasswordPage = () => {
     setIsLoading(true);
     setErrors({});
 
-    const API_URL = `${import.meta.env.VITE_API_BASE_URL}/forgot-password`;
-
     try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username: email }),
-      });
-
-      const responseText = await response.text();
-
-      let data;
-      try {
-        data = responseText ? JSON.parse(responseText) : {};
-      } catch (e) {
-        data = {};
-      }
-
-      if (response.ok) {
-        // Success - email sent (even if response body is empty)
-        setSuccessMessage("Verification code sent to your email!");
-        setStep(2);
-      } else {
-        setErrors({
-          general: data.message || "Failed to send verification code",
-        });
-      }
+      await apiService.forgotPassword(email);
+      setSuccessMessage("Verification code sent to your email!");
+      setStep(2);
     } catch (error) {
-      setErrors({ general: "Failed to send code. Please try again." });
+      setErrors({
+        general: error.message || "Failed to send verification code",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -116,35 +95,13 @@ const ForgotPasswordPage = () => {
     setErrors({});
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/confirm-forgot-password`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: email,
-            code: code,
-            new_password: newPassword,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccessMessage(
-          "Password reset successfully! Redirecting to login..."
-        );
-        setTimeout(() => {
-          navigate("/");
-        }, 2000);
-      } else {
-        setErrors({ general: data.message || "Failed to reset password" });
-      }
+      await apiService.confirmForgotPassword(email, code, newPassword);
+      setSuccessMessage("Password reset successfully! Redirecting to login...");
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
     } catch (error) {
-      setErrors({ general: "Failed to reset password. Please try again." });
+      setErrors({ general: error.message || "Failed to reset password" });
     } finally {
       setIsLoading(false);
     }
@@ -152,50 +109,58 @@ const ForgotPasswordPage = () => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 transition-colors duration-300"
-      style={{
-        background: isDark
-          ? "linear-gradient(to bottom right, rgb(17, 24, 39), rgb(31, 41, 55), rgb(0, 0, 0))"
-          : "linear-gradient(to bottom right, rgb(6, 182, 212), rgb(37, 99, 235), rgb(67, 56, 202))",
-      }}
+      className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-300 relative overflow-hidden ${
+        isDark ? "bg-slate-900" : "bg-slate-50"
+      }`}
     >
-      <div className="w-full max-w-md">
-        {/* Back Button */}
-        <button
-          onClick={() => navigate("/")}
-          className="mb-4 flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
-          style={{
-            backgroundColor: isDark ? "rgb(55, 65, 81)" : "rgb(255, 255, 255)",
-            color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-          }}
-        >
-          <FaArrowLeft />
-          <span>Back to Login</span>
-        </button>
+      {/* Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+        <div
+          className={`absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full blur-3xl ${
+            isDark ? "bg-indigo-900/20" : "bg-indigo-100/50"
+          }`}
+        ></div>
+        <div
+          className={`absolute top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full blur-3xl ${
+            isDark ? "bg-violet-900/20" : "bg-violet-100/50"
+          }`}
+        ></div>
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        {/* Header Actions */}
+        <div className="flex justify-between items-center mb-8">
+          <Link
+            to="/login"
+            className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+              isDark
+                ? "text-slate-400 hover:text-white"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <FaArrowLeft /> Back to Login
+          </Link>
+          <ThemeToggle />
+        </div>
 
         {/* Card */}
         <div
-          className="rounded-2xl shadow-2xl p-8 transition-colors duration-300"
-          style={{
-            backgroundColor: isDark ? "rgb(31, 41, 55)" : "rgb(255, 255, 255)",
-          }}
+          className={`rounded-3xl shadow-2xl p-8 md:p-10 backdrop-blur-xl border transition-all duration-300 ${
+            isDark
+              ? "bg-slate-800/50 border-slate-700"
+              : "bg-white/70 border-white/50"
+          }`}
         >
           {/* Header */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-8">
             <h1
-              className="text-3xl font-bold mb-2 transition-colors duration-300"
-              style={{
-                color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-              }}
+              className={`text-3xl font-bold mb-2 ${
+                isDark ? "text-white" : "text-slate-900"
+              }`}
             >
               {step === 1 ? "Forgot Password" : "Reset Password"}
             </h1>
-            <p
-              className="transition-colors duration-300"
-              style={{
-                color: isDark ? "rgb(209, 213, 219)" : "rgb(75, 85, 99)",
-              }}
-            >
+            <p className={`${isDark ? "text-slate-400" : "text-slate-500"}`}>
               {step === 1
                 ? "Enter your email to receive a verification code"
                 : "Enter the code and your new password"}
@@ -205,44 +170,26 @@ const ForgotPasswordPage = () => {
           {/* Success Message */}
           {successMessage && (
             <div
-              className="mb-4 p-3 border rounded-lg transition-colors duration-300"
-              style={{
-                backgroundColor: isDark
-                  ? "rgba(6, 95, 70, 0.3)"
-                  : "rgb(240, 253, 244)",
-                borderColor: isDark ? "rgb(6, 95, 70)" : "rgb(187, 247, 208)",
-              }}
+              className={`mb-6 p-4 rounded-xl border flex items-center justify-center text-sm font-medium ${
+                isDark
+                  ? "bg-green-900/20 border-green-800 text-green-300"
+                  : "bg-green-50 border-green-100 text-green-600"
+              }`}
             >
-              <p
-                className="text-sm text-center transition-colors duration-300"
-                style={{
-                  color: isDark ? "rgb(134, 239, 172)" : "rgb(22, 163, 74)",
-                }}
-              >
-                {successMessage}
-              </p>
+              {successMessage}
             </div>
           )}
 
           {/* Error Message */}
           {errors.general && (
             <div
-              className="mb-4 p-3 border rounded-lg transition-colors duration-300"
-              style={{
-                backgroundColor: isDark
-                  ? "rgba(127, 29, 29, 0.3)"
-                  : "rgb(254, 242, 242)",
-                borderColor: isDark ? "rgb(153, 27, 27)" : "rgb(254, 202, 202)",
-              }}
+              className={`mb-6 p-4 rounded-xl border flex items-center justify-center text-sm font-medium ${
+                isDark
+                  ? "bg-red-900/20 border-red-800 text-red-300"
+                  : "bg-red-50 border-red-100 text-red-600"
+              }`}
             >
-              <p
-                className="text-sm text-center transition-colors duration-300"
-                style={{
-                  color: isDark ? "rgb(252, 165, 165)" : "rgb(220, 38, 38)",
-                }}
-              >
-                {errors.general}
-              </p>
+              {errors.general}
             </div>
           )}
 
@@ -252,10 +199,9 @@ const ForgotPasswordPage = () => {
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-sm font-medium mb-2 transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                  }}
+                  className={`block text-sm font-medium mb-2 ${
+                    isDark ? "text-slate-300" : "text-slate-700"
+                  }`}
                 >
                   Email Address
                 </label>
@@ -267,28 +213,18 @@ const ForgotPasswordPage = () => {
                     setEmail(e.target.value);
                     setErrors({});
                   }}
-                  className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                  style={{
-                    backgroundColor: isDark
-                      ? "rgb(55, 65, 81)"
-                      : "rgb(255, 255, 255)",
-                    color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                    borderColor: errors.email
-                      ? "rgb(239, 68, 68)"
+                  className={`w-full px-4 py-3 rounded-xl border-2 outline-none transition-all duration-200 ${
+                    errors.email
+                      ? "border-red-500 focus:border-red-500"
                       : isDark
-                      ? "rgb(75, 85, 99)"
-                      : "rgb(209, 213, 219)",
-                  }}
-                  placeholder="Enter your email"
+                      ? "bg-slate-900/50 border-slate-700 focus:border-indigo-500 text-white placeholder-slate-500"
+                      : "bg-white border-slate-200 focus:border-indigo-500 text-slate-900 placeholder-slate-400"
+                  }`}
+                  placeholder="name@company.com"
                   disabled={isLoading}
                 />
                 {errors.email && (
-                  <p
-                    className="mt-1 text-sm"
-                    style={{
-                      color: isDark ? "rgb(252, 165, 165)" : "rgb(239, 68, 68)",
-                    }}
-                  >
+                  <p className="mt-1 text-sm text-red-500 font-medium">
                     {errors.email}
                   </p>
                 )}
@@ -297,15 +233,35 @@ const ForgotPasswordPage = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: isDark
-                    ? "linear-gradient(to right, rgb(29, 78, 216), rgb(67, 56, 202))"
-                    : "linear-gradient(to right, rgb(37, 99, 235), rgb(79, 70, 229))",
-                  color: "rgb(255, 255, 255)",
-                }}
+                className="w-full py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
               >
-                {isLoading ? "Sending..." : "Send Verification Code"}
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Sending...
+                  </span>
+                ) : (
+                  "Send Verification Code"
+                )}
               </button>
             </form>
           )}
@@ -317,10 +273,9 @@ const ForgotPasswordPage = () => {
               <div>
                 <label
                   htmlFor="code"
-                  className="block text-sm font-medium mb-2 transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                  }}
+                  className={`block text-sm font-medium mb-2 ${
+                    isDark ? "text-slate-300" : "text-slate-700"
+                  }`}
                 >
                   Verification Code
                 </label>
@@ -332,29 +287,19 @@ const ForgotPasswordPage = () => {
                     setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
                     setErrors((prev) => ({ ...prev, code: "" }));
                   }}
-                  className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-center text-2xl tracking-widest"
-                  style={{
-                    backgroundColor: isDark
-                      ? "rgb(55, 65, 81)"
-                      : "rgb(255, 255, 255)",
-                    color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                    borderColor: errors.code
-                      ? "rgb(239, 68, 68)"
+                  className={`w-full px-4 py-3 rounded-xl border-2 outline-none transition-all duration-200 text-center text-2xl tracking-widest ${
+                    errors.code
+                      ? "border-red-500 focus:border-red-500"
                       : isDark
-                      ? "rgb(75, 85, 99)"
-                      : "rgb(209, 213, 219)",
-                  }}
+                      ? "bg-slate-900/50 border-slate-700 focus:border-indigo-500 text-white placeholder-slate-500"
+                      : "bg-white border-slate-200 focus:border-indigo-500 text-slate-900 placeholder-slate-400"
+                  }`}
                   placeholder="000000"
                   maxLength={6}
                   disabled={isLoading}
                 />
                 {errors.code && (
-                  <p
-                    className="mt-1 text-sm"
-                    style={{
-                      color: isDark ? "rgb(252, 165, 165)" : "rgb(239, 68, 68)",
-                    }}
-                  >
+                  <p className="mt-1 text-sm text-red-500 font-medium">
                     {errors.code}
                   </p>
                 )}
@@ -364,10 +309,9 @@ const ForgotPasswordPage = () => {
               <div>
                 <label
                   htmlFor="newPassword"
-                  className="block text-sm font-medium mb-2 transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                  }}
+                  className={`block text-sm font-medium mb-2 ${
+                    isDark ? "text-slate-300" : "text-slate-700"
+                  }`}
                 >
                   New Password
                 </label>
@@ -380,30 +324,24 @@ const ForgotPasswordPage = () => {
                       setNewPassword(e.target.value);
                       setErrors((prev) => ({ ...prev, newPassword: "" }));
                     }}
-                    className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all pr-12"
-                    style={{
-                      backgroundColor: isDark
-                        ? "rgb(55, 65, 81)"
-                        : "rgb(255, 255, 255)",
-                      color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                      borderColor: errors.newPassword
-                        ? "rgb(239, 68, 68)"
+                    className={`w-full px-4 py-3 rounded-xl border-2 outline-none transition-all duration-200 pr-12 ${
+                      errors.newPassword
+                        ? "border-red-500 focus:border-red-500"
                         : isDark
-                        ? "rgb(75, 85, 99)"
-                        : "rgb(209, 213, 219)",
-                    }}
+                        ? "bg-slate-900/50 border-slate-700 focus:border-indigo-500 text-white placeholder-slate-500"
+                        : "bg-white border-slate-200 focus:border-indigo-500 text-slate-900 placeholder-slate-400"
+                    }`}
                     placeholder="Enter new password"
                     disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                    style={{
-                      color: isDark
-                        ? "rgb(156, 163, 175)"
-                        : "rgb(107, 114, 128)",
-                    }}
+                    className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors ${
+                      isDark
+                        ? "text-slate-500 hover:text-slate-300"
+                        : "text-slate-400 hover:text-slate-600"
+                    }`}
                   >
                     {showNewPassword ? (
                       <FaEyeSlash size={20} />
@@ -413,20 +351,14 @@ const ForgotPasswordPage = () => {
                   </button>
                 </div>
                 {errors.newPassword && (
-                  <p
-                    className="mt-1 text-sm"
-                    style={{
-                      color: isDark ? "rgb(252, 165, 165)" : "rgb(239, 68, 68)",
-                    }}
-                  >
+                  <p className="mt-1 text-sm text-red-500 font-medium">
                     {errors.newPassword}
                   </p>
                 )}
                 <p
-                  className="mt-1 text-xs"
-                  style={{
-                    color: isDark ? "rgb(156, 163, 175)" : "rgb(107, 114, 128)",
-                  }}
+                  className={`mt-2 text-xs ${
+                    isDark ? "text-slate-500" : "text-slate-400"
+                  }`}
                 >
                   Must be 8+ characters with uppercase, lowercase, number &
                   special character
@@ -437,10 +369,9 @@ const ForgotPasswordPage = () => {
               <div>
                 <label
                   htmlFor="confirmPassword"
-                  className="block text-sm font-medium mb-2 transition-colors duration-300"
-                  style={{
-                    color: isDark ? "rgb(209, 213, 219)" : "rgb(55, 65, 81)",
-                  }}
+                  className={`block text-sm font-medium mb-2 ${
+                    isDark ? "text-slate-300" : "text-slate-700"
+                  }`}
                 >
                   Confirm New Password
                 </label>
@@ -453,30 +384,24 @@ const ForgotPasswordPage = () => {
                       setConfirmPassword(e.target.value);
                       setErrors((prev) => ({ ...prev, confirmPassword: "" }));
                     }}
-                    className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all pr-12"
-                    style={{
-                      backgroundColor: isDark
-                        ? "rgb(55, 65, 81)"
-                        : "rgb(255, 255, 255)",
-                      color: isDark ? "rgb(243, 244, 246)" : "rgb(31, 41, 55)",
-                      borderColor: errors.confirmPassword
-                        ? "rgb(239, 68, 68)"
+                    className={`w-full px-4 py-3 rounded-xl border-2 outline-none transition-all duration-200 pr-12 ${
+                      errors.confirmPassword
+                        ? "border-red-500 focus:border-red-500"
                         : isDark
-                        ? "rgb(75, 85, 99)"
-                        : "rgb(209, 213, 219)",
-                    }}
+                        ? "bg-slate-900/50 border-slate-700 focus:border-indigo-500 text-white placeholder-slate-500"
+                        : "bg-white border-slate-200 focus:border-indigo-500 text-slate-900 placeholder-slate-400"
+                    }`}
                     placeholder="Confirm new password"
                     disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                    style={{
-                      color: isDark
-                        ? "rgb(156, 163, 175)"
-                        : "rgb(107, 114, 128)",
-                    }}
+                    className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors ${
+                      isDark
+                        ? "text-slate-500 hover:text-slate-300"
+                        : "text-slate-400 hover:text-slate-600"
+                    }`}
                   >
                     {showConfirmPassword ? (
                       <FaEyeSlash size={20} />
@@ -486,12 +411,7 @@ const ForgotPasswordPage = () => {
                   </button>
                 </div>
                 {errors.confirmPassword && (
-                  <p
-                    className="mt-1 text-sm"
-                    style={{
-                      color: isDark ? "rgb(252, 165, 165)" : "rgb(239, 68, 68)",
-                    }}
-                  >
+                  <p className="mt-1 text-sm text-red-500 font-medium">
                     {errors.confirmPassword}
                   </p>
                 )}
@@ -500,15 +420,35 @@ const ForgotPasswordPage = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: isDark
-                    ? "linear-gradient(to right, rgb(29, 78, 216), rgb(67, 56, 202))"
-                    : "linear-gradient(to right, rgb(37, 99, 235), rgb(79, 70, 229))",
-                  color: "rgb(255, 255, 255)",
-                }}
+                className="w-full py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
               >
-                {isLoading ? "Resetting..." : "Reset Password"}
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Resetting...
+                  </span>
+                ) : (
+                  "Reset Password"
+                )}
               </button>
             </form>
           )}

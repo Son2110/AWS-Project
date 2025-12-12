@@ -1,40 +1,33 @@
 stages:
+  - .pre
   - build
   - deploy
 
-# Stage 1: Build ứng dụng React (Vite)
-build_app:
-  stage: build
-  # 💡 ĐÃ SỬA: Nâng cấp lên Node 20 để fix lỗi EBADENGINE
-  image: node:20-alpine 
+include:
+  - local: "/lambda/.gitlab-ci.yml"
+  - local: "/src/.gitlab-ci.yml"
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: always
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+      when: always
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"'
+      when: always
+    - when: never
+
+check_source_branch:
+  stage: .pre
   script:
-    - echo "Bắt đầu build React app (Vite)..."
-    - npm install       
-    - npm run build     # Lệnh này sẽ tạo ra thư mục 'dist/'
-  artifacts:
-    paths:
-      # 💡 ĐÃ SỬA: Đổi từ build/ sang dist/
-      - dist/           
-    expire_in: 1 hour
-  only:
-    - main
-
-# Stage 2: Deploy lên S3 và Invalidate CloudFront
-deploy_to_s3:
-  stage: deploy
-  image:
-    name: amazon/aws-cli:latest
-    entrypoint: [""]
-  needs: ["build_app"]
-  script: |
-    echo "Đồng bộ file lên S3 bucket: $S3_BUCKET_NAME..."
-    # 💡 ĐÃ SỬA: Đổi từ ./build sang ./dist
-    aws s3 sync ./dist s3://$S3_BUCKET_NAME --delete
-
-    echo "Trigger CloudFront Invalidation cho Distribution: $CLOUDFRONT_DISTRIBUTION_ID..."
-    aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
-  
-  environment:
-    name: production 
-  only:
-    - main
+    - echo "Kiểm tra nhánh nguồn..."
+    - |
+      if [[ "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" != "dev" ]]; then
+        echo "❌ LỖI: Bạn chỉ được phép merge vào main từ nhánh 'dev'."
+        echo "Nhánh hiện tại của bạn là: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+        exit 1
+      else
+        echo "✅ Hợp lệ: Merge từ dev."
+      fi
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
